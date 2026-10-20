@@ -131,7 +131,7 @@ Config.LaunchPrices = {
 }
 -- Upload assets/music/NeonCircuit.mp3 under the experience owner, grant the
 -- experience permission to use it, and put the resulting audio asset ID here.
-Config.Music = {SoundId = 0, Volume = 0.22}
+Config.Music = {SoundId = 86882641437260, Volume = 0.22}
 -- Built-in Roblox character audio used as processed percussion fallbacks.
 -- Replace SoundId strings with uploaded custom assets later if desired.
 Config.Audio = {

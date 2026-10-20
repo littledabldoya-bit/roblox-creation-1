@@ -123,7 +123,7 @@ volume 0.22. See `assets/music/README.md` for regeneration and upload details.
 **One-time Roblox activation is required:** upload the MP3 as audio under the
 experience owner, wait for approval, grant the experience access, and put its
 numeric asset ID in `Config.Music.SoundId`. Rebuild and publish the place afterward.
-The ID is currently zero, so music shows Coming Soon until that is done. Audio
+The uploaded music ID is now configured as `86882641437260`. Experience access and Roblox moderation still need verification. Audio
 playback, music/combat balance and the revised neon appearance still require a
 Studio/private-server playtest; offline checks cannot judge the final game mix.
 
@@ -148,7 +148,7 @@ Config.Audio exposes the IDs, pitches and volumes for future custom samples.
 `assets/music/NeonCircuit.mp3` in this repository/ZIP. Local files cannot be used
 as SoundId values in a published Roblox place. Upload that MP3 through Creator
 Hub Audio, grant the experience access, and supply the numeric asset ID so it can
-be connected to Config.Music.SoundId. It is still zero; do not expect music yet.
+be connected to Config.Music.SoundId. The supplied ID `86882641437260` is now connected; rebuild/republish and verify experience permissions and playback.
 
 Simulated-service tests cover effect triggering, voice culling/cleanup and
 footstep movement/airborne/respawn behavior. Verify actual asset playback and

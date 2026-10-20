@@ -17,8 +17,9 @@ or recordings. The MP3 is mastered for background use near -16 LUFS with headroo
    in a private published server. Armory → Settings → Arena Music controls muting;
    opening the Armory reduces volume. Music does not restart on character respawn.
 
-Until a real audio ID is supplied, the Music control shows Coming Soon. This MP3
-cannot play in Roblox directly from the repository; audio upload was not performed.
+The user uploaded this track and supplied audio ID `86882641437260`, now configured
+in FN_Config. Experience permission, moderation status and actual Roblox playback
+have not been verified from this workspace. Republish the updated place to activate it.
 
 To regenerate locally, install NumPy 2.3.5 and FFmpeg, then run
 `python3 tools/compose_music.py` from the repository. Normal game builds reuse the
