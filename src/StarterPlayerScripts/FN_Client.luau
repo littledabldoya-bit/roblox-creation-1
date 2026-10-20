@@ -403,6 +403,8 @@ local oldMusic=SoundService:FindFirstChild("FN_ArenaMusic")
 if oldMusic then oldMusic:Destroy() end
 local music=Instance.new("Sound")
 music.Name="FN_ArenaMusic";music.Looped=true;music.Volume=0;music.Parent=SoundService
+local musicFailed=false
+local retryMusic
 local volumeTween
 local function updateMusic()
     if volumeTween then volumeTween:Cancel() end
@@ -416,24 +418,34 @@ musicButton.TextSize=11;musicButton.TextColor3=C.White
 musicButton.Active=musicConfigured;musicButton.Selectable=musicConfigured
 musicButton.Activated:Connect(function()
     if not musicConfigured then return end
+    if musicFailed then retryMusic();return end
     musicMuted=not musicMuted;musicButton.Text=musicMuted and "OFF" or "ON"
     updateMusic()
 end)
 darken:GetPropertyChangedSignal("Visible"):Connect(updateMusic)
 if musicConfigured then
     music.SoundId="rbxassetid://"..tostring(musicId)
-    music:Play();updateMusic()
-    task.delay(20,function()
-        if music.Parent and not music.IsLoaded then
-            warn("[FART-NIGHT] Music did not load; verify audio moderation and experience permissions.")
-            musicButton.Text="UNAVAILABLE"
-            musicButton.Active=false;musicButton.Selectable=false
-        end
-    end)
+    local attempt=0
+    retryMusic=function()
+        attempt+=1
+        local current=attempt
+        musicFailed=false;musicButton.Text=musicMuted and "OFF" or music.IsLoaded and "ON" or "LOADING"
+        music:Stop();music:Play();updateMusic()
+        task.delay(20,function()
+            if current~=attempt or not music.Parent or music.IsLoaded then return end
+            musicFailed=true;musicButton.Text="RETRY MUSIC"
+            -- Keep retry available; a slow/failed request must not permanently disable music.
+            warn("[FART-NIGHT] Music asset "..tostring(musicId).." failed to load in experience "..tostring(game.GameId)..". Check the Roblox Output error, asset moderation and experience audio permission.")
+            toast("Music could not load. Settings → Retry Music. Check audio permission for this experience.")
+        end)
+    end
     music.Loaded:Connect(function()
+        musicFailed=false
         musicButton.Text=musicMuted and "OFF" or "ON"
-        musicButton.Active=true;musicButton.Selectable=true
+        if not music.IsPlaying then music:Play() end
+        updateMusic()
     end)
+    retryMusic()
 end
 gui.Destroying:Connect(function() if music.Parent then music:Destroy() end end)
 

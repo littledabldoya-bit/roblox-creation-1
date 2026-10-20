@@ -487,7 +487,18 @@ local function applyCrown(player)
     local id=s.data.EquippedCrown
     if id=="None" or not Economy.canEquipCrown(Config.Crowns,s.Crowns,id) then return end
     for _,crown in ipairs(Config.Crowns) do
-        if crown.Id==id then createCrownModel(crown,head).Parent=char;return end
+        if crown.Id==id then
+            -- Use Roblox's wearable hierarchy; never replace or hide the avatar Head.
+            local accessory=Instance.new("Accessory");accessory.Name="FN_WornCrown"
+            local handle=Instance.new("Part");handle.Name="Handle";handle.Size=Vector3.new(.2,.2,.2)
+            handle.CFrame=head.CFrame;handle.Transparency=1;handle.Massless=true
+            handle.CanCollide=false;handle.CanTouch=false;handle.CanQuery=false;handle.Parent=accessory
+            local weld=Instance.new("WeldConstraint");weld.Part0=head;weld.Part1=handle;weld.Parent=handle
+            local geometry=createCrownModel(crown,head)
+            for _,piece in ipairs(geometry:GetChildren()) do piece.Parent=accessory end
+            geometry:Destroy();accessory.Parent=char
+            return
+        end
     end
 end
 

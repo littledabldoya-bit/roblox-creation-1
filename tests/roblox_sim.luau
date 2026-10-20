@@ -219,7 +219,7 @@ function Sim.new()
 end
 function Sim:run(source,name) local fn,err=loadstring(source,name);assert(fn,err);setfenv(fn,self.env);return fn() end
 function Sim:addPlayer(name,id)
-    local p=self:object("Player",name,self.services.Players);p.UserId=id;p.DisplayName=name
+    local p=self:object("Player",name,self.services.Players);p.UserId=id;p.DisplayName=name;p.CameraMaxZoomDistance=128
     self:object("Backpack","Backpack",p);self:object("PlayerGui","PlayerGui",p)
     if not self.player then self.player=p;self.services.Players.LocalPlayer=p end
     return p

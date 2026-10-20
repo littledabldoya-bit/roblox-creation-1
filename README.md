@@ -4,6 +4,11 @@ Open **fartnightv6.rbxlx** in Roblox Studio, playtest, then publish over the exi
 Fart-Night experience. This is the near-final private-playtest candidate. The cloud
 workspace does not edit the published Roblox place automatically.
 
+Latest v6 correction: crowns use wearable Accessory instances without changing the
+Head, shoulder-camera zoom stays outside first person, and failed music loads offer
+Retry Music instead of permanently disabling the control. A denied audio asset still
+requires the correct Roblox experience permission; check Studio Output for the cause.
+
 ## Included in the game
 
 - Preserved original arena geometry, balanced cyan/purple accents, subdued bloom,

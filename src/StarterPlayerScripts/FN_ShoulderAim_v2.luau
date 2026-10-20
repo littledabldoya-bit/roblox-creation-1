@@ -4,6 +4,10 @@ local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
 local UserInputService=game:GetService("UserInputService")
 local player=Players.LocalPlayer
+-- Keep the shoulder camera outside the avatar: Roblox hides the local head and
+-- attached wearables when the default camera enters first person.
+player.CameraMinZoomDistance=5
+player.CameraMaxZoomDistance=math.max(player.CameraMaxZoomDistance,18)
 local character, humanoid, root
 local defaultOffset=Vector3.zero
 local fieldOfView=73

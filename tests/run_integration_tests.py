@@ -164,7 +164,18 @@ end)
 test('owned crowns equip, can be removed, and leave no duplicate models',function()
     for _,crown in ipairs(config.Crowns) do
         sim:step(.4);remotes.Shop.OnServerEvent:Fire(player,'EquipCrown',crown.Id);sim:step(0)
-        assert(player.Character:FindFirstChild('FN_WornCrown'))
+        local wearable=player.Character:FindFirstChild('FN_WornCrown')
+        assert(wearable and wearable.ClassName=='Accessory')
+        assert(player.Character.Head.Transparency==0 and player.CameraMinZoomDistance>=5)
+        assert(wearable.Handle.Transparency==1 and not wearable.Handle.CanCollide)
+        local visible=0
+        for _,piece in ipairs(wearable:GetChildren()) do
+            if piece:IsA('BasePart') and piece.Name~='Handle' then
+                assert(piece.Transparency==0 and not piece.Anchored)
+                visible+=1
+            end
+        end
+        assert(visible==24)
     end
     sim:step(.4);remotes.Shop.OnServerEvent:Fire(player,'EquipCrown','None');sim:step(0)
     assert(not player.Character:FindFirstChild('FN_WornCrown'))
@@ -183,6 +194,12 @@ test('music ID is assigned, playback is requested, and mute toggles independentl
     local button=armory.Offers:FindFirstChild('ARENA MUSIC').MusicToggle
     button.Activated:Fire();sim:step(0);assert(sound.Volume==0)
     button.Activated:Fire();sim:step(0);assert(sound.Volume>0)
+    sound.IsLoaded=false;sim:step(21)
+    assert(button.Active and button.Text=='RETRY MUSIC')
+    button.Activated:Fire();sim:step(0)
+    assert(button.Text=='LOADING' and sound.IsPlaying)
+    sound.IsLoaded=true;sound.Loaded:Fire();sim:step(0)
+    assert(button.Text=='ON' and sound.Volume>0)
 end)
 test('every weapon fires through the actual server handler and Burp Cannon casts eight aligned pellets',function()
     sim:step(7)

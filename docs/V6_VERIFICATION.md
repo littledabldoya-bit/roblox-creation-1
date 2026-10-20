@@ -1,7 +1,7 @@
 # v6 offline verification — 20 October 2026
 
 Artifact: `fartnightv6.rbxlx`  
-SHA256: `45d2535c042f0082521bc596bb59c1dd4979d9430f668b63177392a63d4d06fc`
+SHA256: `38075d21b9ccce2f9a743bb310edbc47e61e52e71f9c5da1c9fa0544475fc174`
 
 **67 checks passed**, plus compilation of all seven embedded Luau scripts.
 Reproduce with `python3 tools/verify_release.py`. The saved cloud installer also
@@ -47,3 +47,12 @@ actual soundtrack permissions/playback and SFX mix, R6/R15 crowns, real ownershi
 and receipt delivery/rejoin. Upload any still-blank Creator Hub item icons from
 assets/shop-icons. Publish the v6 place over the existing experience only after
 private verification. This cloud build does not change the live Roblox place.
+
+## Crown/music correction
+
+Crown equip checks now require an Accessory with 24 visible pieces, an invisible
+noncolliding Handle, unchanged Head transparency, and a third-person minimum camera
+zoom. Music simulation also forces a failed load, checks Retry Music stays enabled,
+retries, and recovers after the Loaded event. All 67 checks and seven script
+compilations passed after the correction. Actual wearables/camera rendering and
+audio authorization still require a Roblox engine test.
