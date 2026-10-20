@@ -90,7 +90,7 @@ function Sim.new()
     function self:object(class,name,parent)
         local obj={_props={ClassName=class,Name=name or class,Visible=true,Active=true,Volume=.5,Health=100,MaxHealth=100,WalkSpeed=16,Text="",Transparency=0,Value=0,
             CFrame=CF.new(),Position=V3.zero,Size=baseParts[class] and V3.new(2,1,1) or udim2(0,100,0,100),AbsoluteSize=V2.new(300,100),AbsolutePosition=V2.zero,
-            AssemblyLinearVelocity=V3.zero,MoveDirection=V3.zero,FloorMaterial=self.Enum.Material.SmoothPlastic,CanvasPosition=V2.zero,
+            CameraOffset=V3.zero,LocalTransparencyModifier=0,AssemblyLinearVelocity=V3.zero,MoveDirection=V3.zero,FloorMaterial=self.Enum.Material.SmoothPlastic,CanvasPosition=V2.zero,
             IsPlaying=false,IsLoaded=true,ViewportSize=V2.new(1280,720),FieldOfView=73},_children={},_attrs={},_signals={},_sim=self}
         setmetatable(obj,{
             __index=function(o,k)

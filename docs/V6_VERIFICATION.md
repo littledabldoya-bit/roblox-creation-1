@@ -1,7 +1,7 @@
 # v6 offline verification — 20 October 2026
 
 Artifact: `fartnightv6.rbxlx`  
-SHA256: `38075d21b9ccce2f9a743bb310edbc47e61e52e71f9c5da1c9fa0544475fc174`
+SHA256: `4531c9a3b69c6072a31189efddb269e1647bf331cc33668c7103f8ab469feecd`
 
 **67 checks passed**, plus compilation of all seven embedded Luau scripts.
 Reproduce with `python3 tools/verify_release.py`. The saved cloud installer also
@@ -56,3 +56,16 @@ zoom. Music simulation also forces a failed load, checks Retry Music stays enabl
 retries, and recovers after the Loaded event. All 67 checks and seven script
 compilations passed after the correction. Actual wearables/camera rendering and
 audio authorization still require a Roblox engine test.
+
+## Follow-up camera-fade correction
+
+The reported Studio issue persisted after the accessory/minimum zoom change.
+The shoulder-camera render callback now resets LocalTransparencyModifier on the
+local Head and crown after the default camera update. Crown parts are welded to
+one accessory Handle and the ring sits farther out and above the head. The existing
+crown integration scenario now injects camera fade on the Head and every crown part,
+invokes the actual render callback, and checks that local visibility is restored.
+All 67 offline checks and seven compilations pass. This verifies the code path,
+not Roblox rendering; the user has not yet confirmed this follow-up in Studio.
+Music authorization remains blocked in the user's unpublished experience 0;
+code cannot grant Roblox audio permissions.

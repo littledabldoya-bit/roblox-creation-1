@@ -457,8 +457,8 @@ end
 -- One geometry factory drives both actual equipped crowns and the shop previews.
 local function createCrownModel(selected,head)
     local model=Instance.new("Model");model.Name="FN_WornCrown"
-    local radius=math.max(head.Size.X,head.Size.Z)*.48
-    local height=head.Size.Y*.5+.12
+    local radius=math.max(head.Size.X,head.Size.Z)*.62
+    local height=head.Size.Y*.5+.3
     local function piece(kind,name,size,offset,color)
         local p=Instance.new(kind);p.Name=name;p.Size=size;p.CFrame=head.CFrame*offset
         p.Color=color;p.Material=Enum.Material.Metal
@@ -495,7 +495,14 @@ local function applyCrown(player)
             handle.CanCollide=false;handle.CanTouch=false;handle.CanQuery=false;handle.Parent=accessory
             local weld=Instance.new("WeldConstraint");weld.Part0=head;weld.Part1=handle;weld.Parent=handle
             local geometry=createCrownModel(crown,head)
-            for _,piece in ipairs(geometry:GetChildren()) do piece.Parent=accessory end
+            for _,piece in ipairs(geometry:GetChildren()) do
+                -- Keep one accessory assembly rooted at Handle. The only
+                -- connection to the character is the Handle-to-Head weld.
+                for _,joint in ipairs(piece:GetChildren()) do
+                    if joint:IsA("WeldConstraint") then joint.Part0=handle end
+                end
+                piece.Parent=accessory
+            end
             geometry:Destroy();accessory.Parent=char
             return
         end

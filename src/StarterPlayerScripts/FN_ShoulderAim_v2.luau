@@ -38,6 +38,17 @@ RunService:BindToRenderStep("FN_v2_ShoulderAim",Enum.RenderPriority.Camera.Value
     if not hum or not hrp or hum.Health<=0 or not character or character~=player.Character then return end
     local camera=workspace.CurrentCamera
     if not camera then return end
+    -- Roblox's camera transparency controller runs before this callback. Its
+    -- cached fade can hide the local head/accessories despite third-person zoom.
+    -- Our shoulder view keeps these visible without changing server transparency.
+    local head=character:FindFirstChild("Head")
+    if head and head:IsA("BasePart") then head.LocalTransparencyModifier=0 end
+    local crown=character:FindFirstChild("FN_WornCrown")
+    if crown then
+        for _,part in ipairs(crown:GetDescendants()) do
+            if part:IsA("BasePart") then part.LocalTransparencyModifier=0 end
+        end
+    end
     local equipped=hasGun() and not player:GetAttribute("FN_MenuOpen")
     local rightAim=equipped and (UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) or player:GetAttribute("FN_GamepadAim")==true)
     local target=equipped and (rightAim and Vector3.new(2.25,.75,0) or Vector3.new(1.75,.4,0)) or defaultOffset

@@ -176,6 +176,15 @@ test('owned crowns equip, can be removed, and leave no duplicate models',functio
             end
         end
         assert(visible==24)
+        player.Character.Head.LocalTransparencyModifier=1
+        for _,part in ipairs(wearable:GetDescendants()) do
+            if part:IsA('BasePart') then part.LocalTransparencyModifier=1 end
+        end
+        sim.actions.FN_v2_ShoulderAim(1/60)
+        assert(player.Character.Head.LocalTransparencyModifier==0)
+        for _,part in ipairs(wearable:GetDescendants()) do
+            if part:IsA('BasePart') then assert(part.LocalTransparencyModifier==0) end
+        end
     end
     sim:step(.4);remotes.Shop.OnServerEvent:Fire(player,'EquipCrown','None');sim:step(0)
     assert(not player.Character:FindFirstChild('FN_WornCrown'))
