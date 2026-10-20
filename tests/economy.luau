@@ -1,0 +1,62 @@
+local Economy=require('../src/ReplicatedStorage/FN_Economy')
+local cosmetics={Mint=true,Berry=true,Prismatic=true}
+local passed=0
+local function test(name,fn)
+    local ok,err=pcall(fn)
+    if not ok then error(name..': '..tostring(err)) end
+    passed+=1;print('PASS '..name)
+end
+local function fresh() return Economy.normalize(nil,cosmetics) end
+
+test('new players start with free cosmetic and no currency',function()
+    local d=fresh();assert(d.Coins==0 and d.Unlocks.Mint and d.Equipped=='Mint')
+end)
+test('normalization rejects nonfinite currency and copies durable data',function()
+    local old={Coins=0/0,XP=math.huge,KOs=-1,Unlocks={Mint=true,Berry=true,Fake=true},Receipts={abc=true},Session={Owner='a',Expires=90}}
+    local d=Economy.normalize(old,cosmetics)
+    assert(d.Coins==0 and d.XP==0 and d.KOs==0 and not d.Unlocks.Fake)
+    d.Unlocks.Berry=nil;d.Receipts.abc=nil;d.Session.Owner='b'
+    assert(old.Unlocks.Berry and old.Receipts.abc and old.Session.Owner=='a')
+end)
+test('a receipt grants exactly one award over repeated delivery',function()
+    local d=fresh()
+    for i=1,20 do assert(Economy.grantReceipt(d,'purchase-1',250)==(i==1)) end
+    assert(d.Coins==250 and d.Receipts['purchase-1'])
+end)
+test('receipt remains idempotent after leaving and rejoining',function()
+    local d=fresh();Economy.grantReceipt(d,'persisted',1200)
+    local rejoined=Economy.normalize(d,cosmetics)
+    assert(not Economy.grantReceipt(rejoined,'persisted',1200) and rejoined.Coins==1200)
+end)
+test('UpdateAsync retry computes from the latest committed record',function()
+    local old=fresh()
+    local discarded=Economy.normalize(old,cosmetics);Economy.grantReceipt(discarded,'retry',250)
+    local latest=Economy.normalize(old,cosmetics);Economy.grantReceipt(latest,'retry',250)
+    assert(old.Coins==0 and latest.Coins==250)
+end)
+test('distinct purchases both grant their exact amounts',function()
+    local d=fresh();Economy.grantReceipt(d,'a',250);Economy.grantReceipt(d,'b',4000)
+    assert(d.Coins==4250)
+end)
+test('unknown and ambiguous product IDs are not fulfilled',function()
+    local c={Products={Small=101,Large=102},ProductAwards={Small=250,Large=1200}}
+    assert(Economy.productAward(c,101)==250 and Economy.productAward(c,102)==1200)
+    assert(Economy.productAward(c,0)==nil and Economy.productAward(c,999)==nil)
+    c.Products.Large=101;assert(Economy.productAward(c,101)==nil)
+end)
+test('malformed awards and receipt IDs fail closed',function()
+    assert(not pcall(Economy.grantReceipt,fresh(),'',250))
+    assert(not pcall(Economy.grantReceipt,fresh(),'a',-1))
+    assert(not pcall(Economy.grantReceipt,fresh(),'a',1.5))
+    assert(Economy.productAward({Products={a=1},ProductAwards={a=-1}},1)==nil)
+end)
+test('session lease excludes a second active server',function()
+    local d=fresh();d.Session={Owner='server-A',Expires=180}
+    assert(Economy.canClaim(d,'server-A',10))
+    assert(not Economy.canClaim(d,'server-B',10))
+    assert(Economy.canClaim(d,'server-B',180))
+end)
+test('released or missing session leases can be claimed',function()
+    assert(Economy.canClaim(fresh(),'server-B',10))
+end)
+print(tostring(passed)..' economy tests passed')
