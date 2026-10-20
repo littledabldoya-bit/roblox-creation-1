@@ -1,11 +1,12 @@
 -- FART-NIGHT / ReplicatedStorage / FN_Config
--- Replace all 0 IDs with your OWN Roblox Creator Hub monetization IDs.
+-- Catalog IDs and base prices supplied from the owner's Creator Hub screenshots.
+-- Native Roblox purchase prompts remain authoritative for managed/regional prices.
 local Config = {}
 
 Config.GameName = "FART-NIGHT"
-Config.Version = "5.0.0"
+Config.Version = "6.0.0"
 -- Test premium weapons in Studio only; never grants ownership in published servers.
-Config.StudioPremiumPreview = true
+Config.StudioPremiumPreview = false
 Config.ArenaRadius = 255
 Config.RespawnSeconds = 3
 Config.CoinPickupValue = 5
@@ -43,26 +44,26 @@ Config.Cosmetics = {
 Config.Passes = {
     VoidReaper = 2037023377, -- permanent premium one-shot railgun
     IonStriker = 2040425005, -- permanent premium two-shot rifle
-    VIP = 0, -- exclusive VIP Prism cosmetic + golden VIP tag (no damage buffs)
-    DoubleCoins = 0, -- 2x coins earned from gameplay; no combat stat advantage
+    VIP = 2040029198, -- exclusive VIP Prism cosmetic + golden VIP tag (no damage buffs)
+    DoubleCoins = 2036219448, -- 2x coins earned from gameplay; no combat stat advantage
 }
 -- Each wearable crown is a permanent game pass, not a repeatable product.
 Config.Crowns = {
-    {Id = "Vanguard", Name = "VANGUARD CROWN", PassId = 0, Color = Color3.fromRGB(109, 186, 210)},
-    {Id = "Sovereign", Name = "SOVEREIGN CROWN", PassId = 0, Color = Color3.fromRGB(213, 166, 66)},
-    {Id = "Eclipse", Name = "ECLIPSE CROWN", PassId = 0, Color = Color3.fromRGB(159, 124, 203)},
+    {Id = "Vanguard", Name = "VANGUARD CROWN", PassId = 2040730906, Color = Color3.fromRGB(109, 186, 210)},
+    {Id = "Sovereign", Name = "SOVEREIGN CROWN", PassId = 2041832815, Color = Color3.fromRGB(213, 166, 66)},
+    {Id = "Eclipse", Name = "ECLIPSE CROWN", PassId = 2037179505, Color = Color3.fromRGB(159, 124, 203)},
 }
 
 Config.Products = {
-    Coin250 = 0, -- Creator Hub developer product; repeatable
-    Coin1200 = 0,
-    Coin4000 = 0,
+    Coin250 = 3720387393, -- Creator Hub developer product; repeatable
+    Coin1200 = 3720387708,
+    Coin4000 = 3720387802,
 }
 -- Creator Hub launch prices (Robux). Metadata only: Roblox remains authoritative.
 Config.LaunchPrices = {
     VIP = 149, DoubleCoins = 99, VoidReaper = 499, IonStriker = 249,
-    Vanguard = 49, Sovereign = 99, Eclipse = 149,
-    Coin250 = 19, Coin1200 = 79, Coin4000 = 199,
+    Vanguard = 499, Sovereign = 799, Eclipse = 999,
+    Coin250 = 19, Coin1200 = 79, Coin4000 = 189,
 }
 -- Upload assets/music/NeonCircuit.mp3 under the experience owner, grant the
 -- experience permission to use it, and put the resulting audio asset ID here.

@@ -411,9 +411,10 @@ local function finishWeapon(tool, weaponName)
             visual:Destroy()
         end
     end
-    tool:SetAttribute("FN_ModelV",5)
+    tool:SetAttribute("FN_ModelV",6)
     return tool
 end
+local weaponModels
 local function ensureWeapon(player, weaponName)
     local s=sessions[player]
     if not s or not Combat.canUse(Config,s.PremiumWeapons,weaponName) then return nil end
@@ -428,12 +429,13 @@ local function ensureWeapon(player, weaponName)
     end
     local existing=scan(player.Character) or scan(player:FindFirstChildOfClass("Backpack"))
     if existing then
-        if existing:GetAttribute("FN_ModelV")~=5 then finishWeapon(existing,weaponName) end
+        if existing:GetAttribute("FN_ModelV")~=6 then finishWeapon(existing,weaponName) end
         return existing
     end
-    local template=StarterPack:FindFirstChild(Config.Weapons[weaponName].Display)
+    local template=weaponModels and weaponModels:FindFirstChild(weaponName) or StarterPack:FindFirstChild(Config.Weapons[weaponName].Display)
     local tool=template and template:Clone() or Instance.new("Tool")
-    finishWeapon(tool,weaponName)
+    if tool:GetAttribute("FN_ModelV")~=6 then finishWeapon(tool,weaponName) end
+    tool.Name=Config.Weapons[weaponName].Display
     tool.Parent=player:WaitForChild("Backpack")
     return tool
 end
@@ -452,19 +454,8 @@ local function giveTool(player, weaponName)
     return ensureWeapon(player, weaponName)
 end
 
--- Cosmetic-only crown geometry, welded to the head without collisions or mass.
-local function applyCrown(player)
-    local s=sessions[player]
-    local char=player.Character
-    local head=char and char:FindFirstChild("Head")
-    if not s or not head then return end
-    local old=char:FindFirstChild("FN_WornCrown")
-    if old then old:Destroy() end
-    local id=s.data.EquippedCrown
-    if id=="None" or not Economy.canEquipCrown(Config.Crowns,s.Crowns,id) then return end
-    local selected
-    for _,crown in ipairs(Config.Crowns) do if crown.Id==id then selected=crown;break end end
-    if not selected then return end
+-- One geometry factory drives both actual equipped crowns and the shop previews.
+local function createCrownModel(selected,head)
     local model=Instance.new("Model");model.Name="FN_WornCrown"
     local radius=math.max(head.Size.X,head.Size.Z)*.48
     local height=head.Size.Y*.5+.12
@@ -476,7 +467,7 @@ local function applyCrown(player)
         local weld=Instance.new("WeldConstraint");weld.Part0=head;weld.Part1=p;weld.Parent=p
     end
     for i=1,12 do
-        local angle=(i-1)*math.tau/12
+        local angle=(i-1)*(2*math.pi)/12
         local offset=CFrame.new(math.cos(angle)*radius,height,math.sin(angle)*radius)*CFrame.Angles(0,-angle,0)
         piece("Part","Band",Vector3.new(.14,.16,radius*.54),offset,selected.Color)
         if i%2==0 then
@@ -484,7 +475,39 @@ local function applyCrown(player)
             piece("Part","Gem",Vector3.new(.16,.16,.16),offset*CFrame.new(.08,.05,0),Color3.fromRGB(193,220,235))
         end
     end
-    model.Parent=char
+    return model
+end
+local function applyCrown(player)
+    local s=sessions[player]
+    local char=player.Character
+    local head=char and char:FindFirstChild("Head")
+    if not s or not head then return end
+    local old=char:FindFirstChild("FN_WornCrown")
+    if old then old:Destroy() end
+    local id=s.data.EquippedCrown
+    if id=="None" or not Economy.canEquipCrown(Config.Crowns,s.Crowns,id) then return end
+    for _,crown in ipairs(Config.Crowns) do
+        if crown.Id==id then createCrownModel(crown,head).Parent=char;return end
+    end
+end
+
+local function buildPreviewModels()
+    for _,name in ipairs({"FN_WeaponModels","FN_CrownModels"}) do
+        local old=ReplicatedStorage:FindFirstChild(name)
+        if old then old:Destroy() end
+    end
+    weaponModels=Instance.new("Folder");weaponModels.Name="FN_WeaponModels";weaponModels.Parent=ReplicatedStorage
+    for _,name in ipairs(Config.WeaponOrder) do
+        local tool=Instance.new("Tool");finishWeapon(tool,name);tool.Name=name;tool.Parent=weaponModels
+    end
+    local crowns=Instance.new("Folder");crowns.Name="FN_CrownModels";crowns.Parent=ReplicatedStorage
+    for _,crown in ipairs(Config.Crowns) do
+        local anchor=Instance.new("Part")
+        anchor.Name="CrownAnchor";anchor.Size=Vector3.new(2,1,1);anchor.Transparency=1
+        anchor.Anchored=true;anchor.CanCollide=false;anchor.CanTouch=false;anchor.CanQuery=false
+        local model=createCrownModel(crown,anchor)
+        anchor.Parent=model;model.PrimaryPart=anchor;model.Name=crown.Id;model.Parent=crowns
+    end
 end
 
 local function applyCosmetic(player)
@@ -579,7 +602,7 @@ local function handleSpawn(player, character)
     local root = character:WaitForChild("HumanoidRootPart", 8)
     if root then
         -- Roblox can choose edge spawn pads in old games. Reposition server-side to the permanent safe core.
-        local a = (player.UserId%12)*math.tau/12 + rng:NextNumber(-.24,.24)
+        local a = (player.UserId%12)*(2*math.pi)/12 + rng:NextNumber(-.24,.24)
         local landing = Vector3.new(math.cos(a)*Config.SafeSpawnRadius, 11, math.sin(a)*Config.SafeSpawnRadius)
         character:PivotTo(CFrame.lookAt(landing, Vector3.new(0,landing.Y,0)))
         hum:SetAttribute("FN_ProtectedUntil", os.clock()+Config.SpawnShieldSeconds)
@@ -720,7 +743,7 @@ local function handleShot(player, direction)
     s.lastFire[name] = now
     if not s.firstShotLogged then
         s.firstShotLogged=true
-        print("[FART-NIGHT v5] Server accepted first shot for",player.Name,"with",name)
+        print("[FART-NIGHT v6] Server accepted first shot for",player.Name,"with",name)
     end
     s.ammo[name] -= 1
     local ff = char:FindFirstChild("FN_SpawnShield")
@@ -806,11 +829,12 @@ Reload.OnServerEvent:Connect(function(player)
     local name = weaponOfTool(tool)
     local w = name and Config.Weapons[name]
     if not s or not w or not Combat.canUse(Config,s.PremiumWeapons,name) or s.reloading[name] or s.ammo[name] == w.Magazine then return end
-    s.reloading[name] = os.clock() + w.Reload
+    local reloadAt=os.clock()+w.Reload
+    s.reloading[name]=reloadAt
     sync(player)
     task.delay(w.Reload, function()
-        if sessions[player] ~= s then return end
-        if s.reloading[name] then
+        if sessions[player] ~= s or player.Character~=char then return end
+        if s.reloading[name]==reloadAt then
             s.ammo[name] = w.Magazine
             s.reloading[name] = nil
             sync(player)
@@ -874,11 +898,16 @@ MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passI
     end
     if passId ~= Config.Passes.VIP and passId ~= Config.Passes.DoubleCoins and not purchasedCrown and not purchasedWeapon then return end
     -- The server event is authoritative; confirm entitlement before applying perks.
-    local ok, owned = pcall(function()
-        return MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
-    end)
-    local s = sessions[player]
-    if not s or not ok or not owned then return end
+    local s=sessions[player]
+    if not s or s.closed then return end
+    local ok,owned
+    for attempt=1,3 do
+        ok,owned=pcall(function() return MarketplaceService:UserOwnsGamePassAsync(player.UserId,passId) end)
+        if ok and owned then break end
+        if sessions[player]~=s or s.closed then return end
+        task.wait(attempt*.5)
+    end
+    if sessions[player]~=s or s.closed or not ok or not owned then return end
     if passId == Config.Passes.VIP then s.VIP = true end
     if passId == Config.Passes.DoubleCoins then s.DoubleCoins = true end
     if purchasedCrown then
@@ -935,6 +964,7 @@ MarketplaceService.ProcessReceipt = function(receipt)
 end
 
 -- Coins are continuous, not tied to matches. Physical pickups are server-owned.
+buildPreviewModels()
 for _, p in ipairs(Arena:GetDescendants()) do
     if p:IsA("BasePart") and p.Name == "FN_Coin" then
         local available = true
@@ -1007,8 +1037,8 @@ task.spawn(function()
         local radius = Config.StormMaxRadius - (Config.StormMaxRadius-Config.StormMinRadius) * (elapsed / period)
         local center = Vector3.new(math.sin(os.clock() / 55)*Config.StormCenterWander, 6.6, math.cos(os.clock() / 49)*Config.StormCenterWander)
         for i, p in ipairs(ringParts) do
-            local a = (i-1)*math.tau/#ringParts
-            local b = i*math.tau/#ringParts
+            local a = (i-1)*(2*math.pi)/#ringParts
+            local b = i*(2*math.pi)/#ringParts
             local pa = center + Vector3.new(math.cos(a)*radius,0,math.sin(a)*radius)
             local pb = center + Vector3.new(math.cos(b)*radius,0,math.sin(b)*radius)
             p.Size = Vector3.new(1.1, 2.7, (pb-pa).Magnitude + 0.25)
@@ -1115,4 +1145,4 @@ game:BindToClose(function()
     local deadline = os.clock() + 25
     while pending > 0 and os.clock() < deadline do task.wait(.1) end
 end)
-print("[FART-NIGHT v5] Endless FFA active | server-validated hits, headshots, sliding, collectible cosmetics.")
+print("[FART-NIGHT v6] Endless FFA active | server-validated hits, headshots, sliding, collectible cosmetics.")

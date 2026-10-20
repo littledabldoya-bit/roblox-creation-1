@@ -64,7 +64,7 @@ def build():
     result = result[:config_start] + ''.join(modules) + result[config_start:]
     result = soften_visuals(result)
     ET.fromstring(result)
-    output = ROOT / 'fartnightv5.rbxlx'
+    output = ROOT / 'fartnightv6.rbxlx'
     output.write_text(result)
     print(f'Built {output.name}: {len(seen)+2} scripts')
     return output

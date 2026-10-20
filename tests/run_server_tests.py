@@ -56,6 +56,7 @@ local workspace={WaitForChild=function() return {} end}
 local Random={new=function() return {} end}
 local Enum={ProductPurchaseDecision={NotProcessedYet='retry',PurchaseGranted='granted'}}
 local warn=function() end
+local task={wait=function() end}
 local require=function(name) if name=='FN_Config' then return config elseif name=='FN_Economy' then return Economy elseif name=='FN_Combat' then return Combat end error(name) end
 local api=(function()
 '''+prefix+r'''

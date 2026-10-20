@@ -85,4 +85,4 @@ for _,p in ipairs(arena:GetDescendants()) do
         end
     end
 end
-print("[FART-NIGHT v5] World details and illuminated district signs online")
+print("[FART-NIGHT v6] World details and illuminated district signs online")

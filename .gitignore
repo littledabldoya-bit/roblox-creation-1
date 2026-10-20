@@ -4,3 +4,4 @@ tests/.server.generated.luau
 tests/.catalog.generated.luau
 tests/.audio.generated.luau
 tests/.combat.generated.luau
+tests/.integration.generated.luau

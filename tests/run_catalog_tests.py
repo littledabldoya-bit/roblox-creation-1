@@ -6,6 +6,14 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 source = (ROOT / 'src/ReplicatedStorage/FN_Config.luau').read_text()
 harness = 'local Color3={fromRGB=function(...) return {...} end}\nlocal config=(function()\n' + source + '\nend)()\n' + r'''
+assert(config.Version=='6.0.0' and config.StudioPremiumPreview==false)
+local expected={VIP={2040029198,149},DoubleCoins={2036219448,99},IonStriker={2040425005,249},VoidReaper={2037023377,499},Vanguard={2040730906,499},Sovereign={2041832815,799},Eclipse={2037179505,999},Coin250={3720387393,19},Coin1200={3720387708,79},Coin4000={3720387802,189}}
+for key,entry in pairs(expected) do
+    local id=config.Passes[key] or config.Products[key]
+    for _,crown in ipairs(config.Crowns) do if crown.Id==key then id=crown.PassId end end
+    assert(id==entry[1] and config.LaunchPrices[key]==entry[2], 'Creator Hub catalog mismatch: '..key)
+end
+assert(config.ProductAwards.Coin250==250 and config.ProductAwards.Coin1200==1200 and config.ProductAwards.Coin4000==4000)
 local count=0
 local passIds={}
 local function price(key)
@@ -14,14 +22,14 @@ local function price(key)
     count+=1
 end
 local function pass(id)
-    assert(type(id)=='number' and id>=0 and id%1==0,'Invalid game pass ID')
+    assert(type(id)=='number' and id>0 and id%1==0,'Invalid game pass ID')
     if id>0 then assert(not passIds[id],'A pass ID cannot grant two different items');passIds[id]=true end
 end
 for key,id in pairs(config.Passes) do price(key);pass(id) end
 for _,crown in ipairs(config.Crowns) do price(crown.Id);pass(crown.PassId) end
 for key,id in pairs(config.Products) do
     price(key)
-    assert(type(id)=='number' and id>=0 and id%1==0,'Invalid product ID')
+    assert(type(id)=='number' and id>0 and id%1==0,'Invalid product ID')
     assert(config.ProductAwards[key]>0,'Missing product delivery quantity')
 end
 assert(count==10,'Expected prices for four passes, three crowns, and three coin packs')

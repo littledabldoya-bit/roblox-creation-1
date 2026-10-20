@@ -304,9 +304,43 @@ local function refreshPaid()
     end
     shopStatus.Text=not data.Ready and "PRACTICE MODE · Saving and purchases are unavailable." or pendingPurchase and "Complete or cancel the Roblox prompt. Coins arrive after confirmation." or "PROGRESS SAVED ONLINE · Purchases are optional. Roblox confirms the final price."
 end
+local function previewModel(holder,folderName,modelName)
+    task.spawn(function()
+        local folder=ReplicatedStorage:WaitForChild(folderName,15)
+        local source=folder and folder:WaitForChild(modelName,10)
+        if not source or not holder.Parent then return end
+        local viewport=el("ViewportFrame","ModelPreview",holder,{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,Ambient=Color3.fromRGB(175,185,210),LightColor=Color3.fromRGB(255,246,230),LightDirection=Vector3.new(-1,-1,-1)})
+        local world=el("WorldModel","PreviewWorld",viewport)
+        local model=el("Model","DisplayModel",world)
+        local clone=source:Clone();clone.Parent=model
+        for _,object in ipairs(clone:GetDescendants()) do
+            if object:IsA("BasePart") then object.Anchored=true;object.CanCollide=false
+            elseif object:IsA("LuaSourceContainer") then object:Destroy() end
+        end
+        local camera=el("Camera","PreviewCamera",viewport,{FieldOfView=35})
+        viewport.CurrentCamera=camera
+        model:PivotTo(CFrame.Angles(0,math.rad(25),math.rad(-12)))
+        local bounds,size=model:GetBoundingBox()
+        local distance=math.max(size.X,size.Y,size.Z)*.65/math.tan(math.rad(17.5))
+        camera.CFrame=CFrame.lookAt(bounds.Position+Vector3.new(1,.65,1.5).Unit*distance,bounds.Position)
+        holder.Fallback.Visible=false
+    end)
+end
+
 local function robuxOffer(key,title,kind,id,description,order,crown)
     local weapon=Config.Weapons[key]
     local frame=offer(title,description,crown and crown.Color or weapon and weapon.Color or C.Gold,crown and "Crowns" or weapon and "Guns" or kind=="Pass" and "Passes" or "Coins",order)
+    frame.Size=UDim2.new(1,-9,0,154)
+    frame:FindFirstChild("Name").Position=UDim2.fromOffset(114,10)
+    frame:FindFirstChild("Name").Size=UDim2.new(1,-128,0,36);frame:FindFirstChild("Name").TextWrapped=true;frame:FindFirstChild("Name").TextSize=13
+    frame.Description.Position=UDim2.fromOffset(114,48)
+    frame.Description.Size=UDim2.new(1,-128,0,48)
+    local preview=el("Frame","ItemPreview",frame,{Position=UDim2.fromOffset(12,12),Size=UDim2.fromOffset(92,92),BackgroundColor3=C.Panel,BorderSizePixel=0})
+    rounded(preview,8)
+    local fallback=lbl("Fallback",preview,crown and "CROWN" or weapon and "GEAR" or key=="VIP" and "VIP" or key=="DoubleCoins" and "2×" or "COINS",UDim2.new(),UDim2.fromScale(1,1),16,crown and crown.Color or C.Gold)
+    fallback.TextXAlignment=Enum.TextXAlignment.Center
+    if weapon then previewModel(preview,"FN_WeaponModels",key)
+    elseif crown then previewModel(preview,"FN_CrownModels",crown.Id) end
     local b=btn("Robux",frame,"COMING SOON",UDim2.new(1,-154,1,-40),UDim2.fromOffset(140,32),C.Gold)
     b.TextSize=11
     local entry={Key=key,Kind=kind,Id=id,Weapon=weapon,CrownId=crown and crown.Id,Button=b,Available=false,Price="UNAVAILABLE"}
@@ -316,9 +350,19 @@ local function robuxOffer(key,title,kind,id,description,order,crown)
     table.insert(paidOffers,entry)
     if id>0 then
         task.spawn(function()
-            local ok,info=pcall(function() return MarketplaceService:GetProductInfoAsync(id,kind=="Pass" and Enum.InfoType.GamePass or Enum.InfoType.Product) end)
-            if ok and info and info.IsForSale~=false and type(info.PriceInRobux)=="number" then
-                entry.Available=true;entry.Price="R$ "..tostring(info.PriceInRobux)
+            local ok,info
+            for attempt=1,3 do
+                ok,info=pcall(function() return MarketplaceService:GetProductInfoAsync(id,kind=="Pass" and Enum.InfoType.GamePass or Enum.InfoType.Product) end)
+                if ok and type(info)=="table" then break end
+                task.wait(attempt*.5)
+            end
+            if ok and type(info)=="table" then
+                if info.IsForSale~=false and type(info.PriceInRobux)=="number" then
+                    entry.Available=true;entry.Price="R$ "..tostring(info.PriceInRobux)
+                end
+                if not weapon and not crown and type(info.IconImageAssetId)=="number" and info.IconImageAssetId>0 then
+                    el("ImageLabel","RobloxItemIcon",preview,{Size=UDim2.fromScale(1,1),Image="rbxassetid://"..tostring(info.IconImageAssetId),BackgroundTransparency=1})
+                end
             end
             refreshPaid()
         end)
@@ -575,7 +619,7 @@ local function fireOnce()
     Shoot:FireServer(aim)
     if not firstShotSent then
         firstShotSent=true
-        print("[FART-NIGHT v5] Client fired with",name)
+        print("[FART-NIGHT v6] Client fired with",name)
     end
     cross.BackgroundColor3=w.Color
     task.delay(.07,function() if cross.Parent then cross.BackgroundColor3=Color3.new(1,1,1) end end)
@@ -603,6 +647,7 @@ local boundTools={}
 local function onTool(tool)
     if not weaponOfTool(tool) or boundTools[tool] then return end
     boundTools[tool]=true
+    tool.Destroying:Connect(function() boundTools[tool]=nil end)
     tool.Equipped:Connect(function()
         equipped=weaponOfTool(tool)
         -- Keep the cursor free so clickable weapon buttons and SHOP actually work.
