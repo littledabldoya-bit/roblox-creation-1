@@ -17,7 +17,6 @@ local config={Cosmetics={{Id='Mint',Name='Mint',Cost=0}},WeaponOrder={},Products
 config.Passes.VoidReaper=301;config.Passes.IonStriker=302
 config.Weapons={VoidReaper={PassKey='VoidReaper',Display='VOID REAPER'},IonStriker={PassKey='IonStriker',Display='ION STRIKER'}}
 config.WeaponOrder={'VoidReaper','IonStriker'}
-config.Crowns={{Id="Vanguard",PassId=201},{Id="Sovereign",PassId=202},{Id="Eclipse",PassId=203}}
 local record=nil
 local fail=false
 local loseResponse=false
@@ -66,7 +65,7 @@ local state
 local function reset()
     record=Economy.normalize(nil,{Mint=true});record.Session={Owner='owner-A',Expires=os.time()+180}
     state={data=Economy.normalize(record,{Mint=true}),owner='owner-A',persistReady=true,leaseUntil=os.time()+180,
-        Crowns={},PremiumWeapons={},pendingCoins=0,pendingXP=0,pendingKOs=0,pendingDeaths=0,pendingUnlocks={},ammo={},reloading={},busy=false,streak=0}
+        PremiumWeapons={},pendingCoins=0,pendingXP=0,pendingKOs=0,pendingDeaths=0,pendingUnlocks={},ammo={},reloading={},busy=false,streak=0}
     api.sessions[player]=state;ownsPass=false;fail=false;loseResponse=false;calls=0;duringUpdate=nil
 end
 local passed=0
@@ -149,33 +148,10 @@ test('closing saves release the session and cannot save twice'  ,function()
     assert(api.save(player,true) and not record.Session and state.closed and record.Coins==10)
     local before=calls;assert(api.save(player,true) and calls==before)
 end)
-test('unowned or forged crown equip requests are rejected',function()
-    remoteEvents.Shop.Callback(player,'EquipCrown','Vanguard')
-    assert(state.data.EquippedCrown=='None')
-    state.lastShopRequest=-10;state.Crowns.Fake=true
-    remoteEvents.Shop.Callback(player,'EquipCrown','Fake')
-    assert(state.data.EquippedCrown=='None')
-end)
-test('owned crowns can be worn, persisted, and removed',function()
-    state.Crowns.Vanguard=true
-    remoteEvents.Shop.Callback(player,'EquipCrown','Vanguard')
-    assert(state.data.EquippedCrown=='Vanguard')
-    assert(api.save(player) and record.EquippedCrown=='Vanguard')
-    state.lastShopRequest=-10
-    remoteEvents.Shop.Callback(player,'EquipCrown','None')
-    assert(state.data.EquippedCrown=='None')
-    assert(api.save(player) and record.EquippedCrown=='None')
-end)
-test('crown purchase requires server ownership confirmation and auto equips',function()
-    passFinished(player,201,false);assert(not state.Crowns.Vanguard)
-    passFinished(player,201,true);assert(not state.Crowns.Vanguard)
+test('removed crown pass IDs grant no game item',function()
     ownsPass=true;passFinished(player,201,true)
-    assert(state.Crowns.Vanguard and state.data.EquippedCrown=='Vanguard')
-    assert(api.save(player) and record.EquippedCrown=='Vanguard')
-end)
-test('unknown pass cannot grant a crown',function()
-    ownsPass=true;passFinished(player,999,true)
-    assert(not state.Crowns.Vanguard and state.data.EquippedCrown=='None')
+    assert(not state.PremiumWeapons.VoidReaper and not state.PremiumWeapons.IonStriker)
+    assert(state.data.EquippedCrown==nil and state.Crowns==nil)
 end)
 test('premium gun passes require server confirmation before unlocking',function()
     passFinished(player,301,false);assert(not state.PremiumWeapons.VoidReaper)

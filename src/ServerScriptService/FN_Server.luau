@@ -44,7 +44,7 @@ local byCosmetic = {}
 for _, skin in ipairs(Config.Cosmetics) do byCosmetic[skin.Id] = skin end
 
 local function defaultData()
-    return {Coins = 0, XP = 0, KOs = 0, Deaths = 0, Unlocks = {Mint = true}, Equipped = "Mint", EquippedCrown = "None", Receipts = {}}
+    return {Coins = 0, XP = 0, KOs = 0, Deaths = 0, Unlocks = {Mint = true}, Equipped = "Mint", Receipts = {}}
 end
 local function normalized(value)
     return Economy.normalize(value, byCosmetic)
@@ -55,7 +55,7 @@ local function sync(player)
     Sync:FireClient(player, {
         Coins = s.data.Coins, XP = s.data.XP, Level = math.floor(s.data.XP/300)+1, KOs = s.data.KOs, Deaths = s.data.Deaths,
         Unlocks = s.data.Unlocks, Equipped = s.data.Equipped, VIP = s.VIP,
-        Crowns = s.Crowns, EquippedCrown = s.data.EquippedCrown, PremiumWeapons = s.PremiumWeapons,
+        PremiumWeapons = s.PremiumWeapons,
         DoubleCoins = s.DoubleCoins, Ready = s.persistReady and os.time() < s.leaseUntil,
         Ammo = s.ammo, Reloads = s.reloading,
     })
@@ -103,7 +103,7 @@ local function save(player, closing)
     if not s.saveAttempt then
         s.saveSequence=(s.saveSequence or 0)+1
         s.saveAttempt={Id=s.owner..":"..s.saveSequence, Closing=closing==true, Coins=s.pendingCoins, XP=s.pendingXP,
-            KOs=s.pendingKOs, Deaths=s.pendingDeaths, Unlocks=table.clone(s.pendingUnlocks), Equipped=s.data.Equipped, EquippedCrown=s.data.EquippedCrown}
+            KOs=s.pendingKOs, Deaths=s.pendingDeaths, Unlocks=table.clone(s.pendingUnlocks), Equipped=s.data.Equipped}
     end
     local attempt=s.saveAttempt
     local deltaCoins,deltaXP,deltaKOs,deltaDeaths=attempt.Coins,attempt.XP,attempt.KOs,attempt.Deaths
@@ -120,9 +120,6 @@ local function save(player, closing)
                 d.Deaths += deltaDeaths
                 for id in pairs(newUnlocks) do d.Unlocks[id] = true end
                 if d.Unlocks[equipped] or (equipped == "Prismatic" and s.VIP) then d.Equipped = equipped end
-                if Economy.canEquipCrown(Config.Crowns, s.Crowns, attempt.EquippedCrown) then
-                    d.EquippedCrown=attempt.EquippedCrown
-                end
                 d.LastSaveId=attempt.Id
             end
             if closing then d.Session = nil else d.Session = {Owner = s.owner, Expires = os.time() + SESSION_SECONDS} end
@@ -454,108 +451,18 @@ local function giveTool(player, weaponName)
     return ensureWeapon(player, weaponName)
 end
 
--- One geometry factory drives both actual equipped crowns and the shop previews.
-local function createCrownModel(selected,head)
-    local model=Instance.new("Model");model.Name="FN_WornCrown"
-    local radius=math.max(head.Size.X,head.Size.Z)*.62
-    local height=head.Size.Y*.5+.3
-    local function piece(kind,name,size,offset,color)
-        local p=Instance.new(kind);p.Name=name;p.Size=size;p.CFrame=head.CFrame*offset
-        p.Color=color;p.Material=Enum.Material.Metal
-        p.CanCollide=false;p.CanTouch=false;p.CanQuery=false;p.Massless=true;p.CastShadow=false
-        p.Parent=model
-        local weld=Instance.new("WeldConstraint");weld.Part0=head;weld.Part1=p;weld.Parent=p
-    end
-    for i=1,12 do
-        local angle=(i-1)*(2*math.pi)/12
-        local offset=CFrame.new(math.cos(angle)*radius,height,math.sin(angle)*radius)*CFrame.Angles(0,-angle,0)
-        piece("Part","Band",Vector3.new(.14,.16,radius*.54),offset,selected.Color)
-        if i%2==0 then
-            piece("WedgePart","Point",Vector3.new(.18,.46,radius*.38),offset*CFrame.new(0,.25,0),selected.Color)
-            piece("Part","Gem",Vector3.new(.16,.16,.16),offset*CFrame.new(.08,.05,0),Color3.fromRGB(193,220,235))
-        end
-    end
-    return model
-end
-local function createCrownBadge(head,crown)
-    -- A crisp, always-visible crown marker accompanies the 3D crown. It uses
-    -- only BillboardGui shapes, so avatar mesh/camera transparency cannot hide it.
-    local badge=Instance.new("BillboardGui")
-    badge.Name="FN_CrownBadge";badge.Adornee=head
-    badge.Size=UDim2.fromOffset(72,52);badge.StudsOffset=Vector3.new(0,1.48,0)
-    badge.AlwaysOnTop=true;badge.LightInfluence=0;badge.MaxDistance=300;badge.Parent=head
-    local base=Instance.new("Frame")
-    base.Name="CrownBand";base.Position=UDim2.fromOffset(12,34)
-    base.Size=UDim2.fromOffset(48,9);base.BackgroundColor3=crown.Color
-    base.BorderSizePixel=0;base.Parent=badge
-    local baseCorner=Instance.new("UICorner");baseCorner.CornerRadius=UDim.new(0,3);baseCorner.Parent=base
-    for i=1,3 do
-        local spike=Instance.new("Frame")
-        spike.Name="CrownPoint";spike.Size=UDim2.fromOffset(i==2 and 14 or 12,i==2 and 14 or 12)
-        spike.Position=UDim2.fromOffset(16+(i-1)*18,i==2 and 8 or 18)
-        spike.Rotation=45;spike.BackgroundColor3=crown.Color
-        spike.BorderSizePixel=0;spike.Parent=badge
-        local edge=Instance.new("UIStroke");edge.Color=Color3.fromRGB(255,245,210)
-        edge.Thickness=1.5;edge.Parent=spike
-        local gem=Instance.new("Frame")
-        gem.Name="CrownGem";gem.Size=UDim2.fromOffset(4,4)
-        gem.AnchorPoint=Vector2.new(.5,.5);gem.Position=UDim2.fromScale(.5,.5)
-        gem.BackgroundColor3=Color3.fromRGB(255,250,220);gem.BorderSizePixel=0;gem.Parent=spike
-        local gemCorner=Instance.new("UICorner");gemCorner.CornerRadius=UDim.new(1,0);gemCorner.Parent=gem
-    end
-end
-
-local function applyCrown(player)
-    local s=sessions[player]
-    local char=player.Character
-    local head=char and char:FindFirstChild("Head")
-    if not s or not head then return end
-    local old=char:FindFirstChild("FN_WornCrown")
-    if old then old:Destroy() end
-    local oldBadge=head:FindFirstChild("FN_CrownBadge")
-    if oldBadge then oldBadge:Destroy() end
-    local id=s.data.EquippedCrown
-    if id=="None" or not Economy.canEquipCrown(Config.Crowns,s.Crowns,id) then return end
-    for _,crown in ipairs(Config.Crowns) do
-        if crown.Id==id then
-            -- Use Roblox's wearable hierarchy; never replace or hide the avatar Head.
-            local accessory=Instance.new("Accessory");accessory.Name="FN_WornCrown"
-            local handle=Instance.new("Part");handle.Name="Handle";handle.Size=Vector3.new(.2,.2,.2)
-            handle.CFrame=head.CFrame;handle.Transparency=1;handle.Massless=true
-            handle.CanCollide=false;handle.CanTouch=false;handle.CanQuery=false;handle.Parent=accessory
-            local weld=Instance.new("WeldConstraint");weld.Part0=head;weld.Part1=handle;weld.Parent=handle
-            local geometry=createCrownModel(crown,head)
-            for _,piece in ipairs(geometry:GetChildren()) do
-                -- Keep one accessory assembly rooted at Handle. The only
-                -- connection to the character is the Handle-to-Head weld.
-                for _,joint in ipairs(piece:GetChildren()) do
-                    if joint:IsA("WeldConstraint") then joint.Part0=handle end
-                end
-                piece.Parent=accessory
-            end
-            geometry:Destroy();accessory.Parent=char
-            createCrownBadge(head,crown)
-            return
-        end
-    end
-end
-
+-- Replicate the same finished gun models used by player loadouts to the Armory.
 local function buildPreviewModels()
-    for _,name in ipairs({"FN_WeaponModels","FN_CrownModels"}) do
-        local old=ReplicatedStorage:FindFirstChild(name)
-        if old then old:Destroy() end
-    end
-    weaponModels=Instance.new("Folder");weaponModels.Name="FN_WeaponModels";weaponModels.Parent=ReplicatedStorage
+    local old=ReplicatedStorage:FindFirstChild("FN_WeaponModels")
+    if old then old:Destroy() end
+    weaponModels=Instance.new("Folder")
+    weaponModels.Name="FN_WeaponModels"
+    weaponModels.Parent=ReplicatedStorage
     for _,name in ipairs(Config.WeaponOrder) do
-        local tool=Instance.new("Tool");finishWeapon(tool,name);tool.Name=name;tool.Parent=weaponModels
-    end
-    local crowns=Instance.new("Folder");crowns.Name="FN_CrownModels";crowns.Parent=ReplicatedStorage
-    for _,crown in ipairs(Config.Crowns) do
-        local anchor=Instance.new("Part")
-        anchor.Name="CrownAnchor";anchor.Size=Vector3.new(2,1,1);anchor.Transparency=1
-        anchor.Anchored=true;anchor.CanCollide=false;anchor.CanTouch=false;anchor.CanQuery=false
-        local model=createCrownModel(crown,anchor)
-        anchor.Parent=model;model.PrimaryPart=anchor;model.Name=crown.Id;model.Parent=crowns
+        local tool=Instance.new("Tool")
+        finishWeapon(tool,name)
+        tool.Name=name
+        tool.Parent=weaponModels
     end
 end
 
@@ -567,7 +474,6 @@ local function applyCosmetic(player)
     local root = char:FindFirstChild("HumanoidRootPart")
     local head = char:FindFirstChild("Head")
     if not root or not head then return end
-    applyCrown(player)
     local old = root:FindFirstChild("FN_GasAura")
     if old then old:Destroy() end
     local att = Instance.new("Attachment")
@@ -690,7 +596,7 @@ local function load(player)
         data = defaultData(), persistReady = false,
         owner = HttpService:GenerateGUID(false), leaseUntil = 0, closed = false,
         pendingCoins = 0, pendingXP=0, pendingKOs = 0, pendingDeaths = 0, pendingUnlocks = {},
-        VIP = false, DoubleCoins = false, Crowns = {}, PremiumWeapons = {}, busy = false, streak = 0,
+        VIP = false, DoubleCoins = false, PremiumWeapons = {}, busy = false, streak = 0,
         ammo = {}, reloading = {}, lastFire = {}, stamina=100, sprintRequested=false,
     }
     local studioPreview=Config.StudioPremiumPreview and RunService:IsStudio()
@@ -763,7 +669,6 @@ local function load(player)
             if s.PremiumWeapons[name] and player.Character then giveTool(player,name) end
         end
     end
-    for _,crown in ipairs(Config.Crowns) do s.Crowns[crown.Id]=owns(crown.PassId) end
     if s.data.Equipped == "Prismatic" and not s.VIP then s.data.Equipped = "Mint" end
     stats(player, s)
     applyCosmetic(player)
@@ -897,7 +802,7 @@ RequestSync.OnServerEvent:Connect(function(player)
     sync(player)
 end)
 Shop.OnServerEvent:Connect(function(player, action, cosmeticId)
-    if action ~= "Buy" and action ~= "Equip" and action ~= "EquipCrown" then return end
+    if action ~= "Buy" and action ~= "Equip" then return end
     if type(cosmeticId) ~= "string" then return end
     local s = sessions[player]
     local cosmetic = byCosmetic[cosmeticId]
@@ -906,13 +811,6 @@ Shop.OnServerEvent:Connect(function(player, action, cosmeticId)
     s.lastShopRequest = os.clock()
     if not s.persistReady or os.time() >= s.leaseUntil then
         Notice:FireClient(player, "Your progress is still connecting. Try the shop again shortly.")
-        return
-    end
-    if action=="EquipCrown" then
-        if not Economy.canEquipCrown(Config.Crowns,s.Crowns,cosmeticId) then return end
-        s.data.EquippedCrown=cosmeticId
-        applyCrown(player);sync(player)
-        Notice:FireClient(player,cosmeticId=="None" and "Crown removed." or "Crown equipped!")
         return
     end
     if not cosmetic then return end
@@ -936,16 +834,12 @@ end)
 
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
     if not purchased or passId <= 0 then return end
-    local purchasedCrown
-    for _,crown in ipairs(Config.Crowns) do
-        if crown.PassId>0 and crown.PassId==passId then purchasedCrown=crown;break end
-    end
     local purchasedWeapon
     for _,name in ipairs(Config.WeaponOrder) do
         local spec=Config.Weapons[name]
         if spec.PassKey and Config.Passes[spec.PassKey]==passId then purchasedWeapon=name;break end
     end
-    if passId ~= Config.Passes.VIP and passId ~= Config.Passes.DoubleCoins and not purchasedCrown and not purchasedWeapon then return end
+    if passId ~= Config.Passes.VIP and passId ~= Config.Passes.DoubleCoins and not purchasedWeapon then return end
     -- The server event is authoritative; confirm entitlement before applying perks.
     local s=sessions[player]
     if not s or s.closed then return end
@@ -959,10 +853,6 @@ MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passI
     if sessions[player]~=s or s.closed or not ok or not owned then return end
     if passId == Config.Passes.VIP then s.VIP = true end
     if passId == Config.Passes.DoubleCoins then s.DoubleCoins = true end
-    if purchasedCrown then
-        s.Crowns[purchasedCrown.Id]=true
-        s.data.EquippedCrown=purchasedCrown.Id
-    end
     if purchasedWeapon then
         s.PremiumWeapons[purchasedWeapon]=true
         local tool=player.Character and giveTool(player,purchasedWeapon)

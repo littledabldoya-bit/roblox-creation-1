@@ -11,7 +11,7 @@ function Economy.normalize(value, cosmetics)
     local data = {
         Coins = integer(old.Coins), XP = integer(old.XP),
         KOs = integer(old.KOs), Deaths = integer(old.Deaths),
-        Unlocks = {Mint = true}, Equipped = "Mint", EquippedCrown = "None", Receipts = {},
+        Unlocks = {Mint = true}, Equipped = "Mint", Receipts = {},
     }
     if type(old.Unlocks) == "table" then
         for id, owned in pairs(old.Unlocks) do
@@ -23,7 +23,6 @@ function Economy.normalize(value, cosmetics)
             if type(id) == "string" and granted == true then data.Receipts[id] = true end
         end
     end
-    if type(old.EquippedCrown)=="string" then data.EquippedCrown=old.EquippedCrown end
     if cosmetics[old.Equipped] then data.Equipped = old.Equipped end
     if type(old.LastSaveId)=="string" then data.LastSaveId=old.LastSaveId end
     if type(old.Session) == "table" then data.Session = table.clone(old.Session) end
@@ -58,13 +57,5 @@ function Economy.productAward(config, productId)
     return found
 end
 
-function Economy.canEquipCrown(catalog, owned, id)
-    if id=="None" then return true end
-    if type(id)~="string" or type(owned)~="table" or owned[id]~=true then return false end
-    for _,crown in ipairs(catalog) do
-        if crown.Id==id then return true end
-    end
-    return false
-end
 
 return Economy

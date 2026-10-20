@@ -47,13 +47,6 @@ Config.Passes = {
     VIP = 2040029198, -- exclusive VIP Prism cosmetic + golden VIP tag (no damage buffs)
     DoubleCoins = 2036219448, -- 2x coins earned from gameplay; no combat stat advantage
 }
--- Each wearable crown is a permanent game pass, not a repeatable product.
-Config.Crowns = {
-    {Id = "Vanguard", Name = "VANGUARD CROWN", PassId = 2040730906, Color = Color3.fromRGB(109, 186, 210)},
-    {Id = "Sovereign", Name = "SOVEREIGN CROWN", PassId = 2041832815, Color = Color3.fromRGB(213, 166, 66)},
-    {Id = "Eclipse", Name = "ECLIPSE CROWN", PassId = 2037179505, Color = Color3.fromRGB(159, 124, 203)},
-}
-
 Config.Products = {
     Coin250 = 3720387393, -- Creator Hub developer product; repeatable
     Coin1200 = 3720387708,
@@ -62,7 +55,6 @@ Config.Products = {
 -- Creator Hub launch prices (Robux). Metadata only: Roblox remains authoritative.
 Config.LaunchPrices = {
     VIP = 149, DoubleCoins = 99, VoidReaper = 499, IonStriker = 249,
-    Vanguard = 499, Sovereign = 799, Eclipse = 999,
     Coin250 = 19, Coin1200 = 79, Coin4000 = 189,
 }
 -- Upload assets/music/NeonCircuit.mp3 under the experience owner, grant the

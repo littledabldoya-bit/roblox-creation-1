@@ -1,21 +1,17 @@
-# FartNight shop icons
+# FartNight shop artwork
 
-All ten icons are 1024×1024 JPGs. Download `fartnight-all-shop-icons.zip` for the
-complete set, or `fartnight-gun-icons.zip` for just the two weapon icons.
+JPGs for the remaining in-game Robux offers. The bundled `fartnight-all-shop-icons.zip`
+contains these seven current items only.
 
-| Item | File | Creator Hub item type |
+| Item | File | Type |
 | --- | --- | --- |
-| Void Reaper | void-reaper.jpg | Pass |
-| Ion Striker | ion-striker.jpg | Pass |
-| VIP | vip.jpg | Pass |
 | Double Coins | double-coins.jpg | Pass |
-| Vanguard Crown | vanguard-crown.jpg | Pass |
-| Sovereign Crown | sovereign-crown.jpg | Pass |
-| Eclipse Crown | eclipse-crown.jpg | Pass |
-| 250 Coins | coins-250.jpg | Developer Product |
-| 1,200 Coins | coins-1200.jpg | Developer Product |
-| 4,000 Coins | coins-4000.jpg | Developer Product |
+| VIP | vip.jpg | Pass |
+| Ion Striker | ion-striker.jpg | Pass |
+| Void Reaper | void-reaper.jpg | Pass |
+| 250 Coins | coins-250.jpg | Developer product |
+| 1,200 Coins | coins-1200.jpg | Developer product |
+| 4,000 Coins | coins-4000.jpg | Developer product |
 
-Upload the matching JPG when creating or editing each item in Creator Hub. These
-are promotional illustrations based on the item designs, not Studio screenshots.
-Prices are deliberately omitted so changing a price does not require new artwork.
+Crown passes and crown shop offers were removed from the game; their artwork is no
+longer included here. Already-created Creator Hub passes are unaffected.

@@ -72,14 +72,12 @@ local sim=Sim.new()
 {scene_source()}
 {modules}
 local config=sim.modules.FN_Config
-assert(config.Version=='6.0.0' and not config.StudioPremiumPreview)
+assert(config.Version=='6.0.0' and not config.StudioPremiumPreview and config.Crowns==nil)
 local player=sim:addPlayer('Owner',42)
 local opponent=sim:addPlayer('Rival',43)
 sim.owned[42]={{}}
 for _,id in pairs(config.Passes) do sim.owned[42][id]=true end
-for _,crown in ipairs(config.Crowns) do sim.owned[42][crown.PassId]=true end
 for key,id in pairs(config.Passes) do sim.metadata[id]={{PriceInRobux=config.LaunchPrices[key],IsForSale=true,IconImageAssetId=id+100}} end
-for _,crown in ipairs(config.Crowns) do sim.metadata[crown.PassId]={{PriceInRobux=config.LaunchPrices[crown.Id],IsForSale=true,IconImageAssetId=crown.PassId+100}} end
 for key,id in pairs(config.Products) do sim.metadata[id]={{PriceInRobux=config.LaunchPrices[key],IsForSale=true,IconImageAssetId=id+100}} end
 sim:run({literal(server)},'FN_Server')
 sim:run({literal(world)},'FN_WorldDetail')
@@ -104,7 +102,7 @@ test('whole server and client start, hydrate profiles and initialize the first l
     assert(player.Character:FindFirstChildOfClass('Tool'))
     assert(#sim.errors==0,'Unexpected startup warning')
 end)
-test('all five detailed weapons and three wearable crowns exist in the running game',function()
+test('all five detailed weapons exist; crown assets are removed from the running game',function()
     local bank=sim.services.ReplicatedStorage.FN_WeaponModels
     assert(#bank:GetChildren()==5)
     for _,name in ipairs(config.WeaponOrder) do
@@ -115,7 +113,8 @@ test('all five detailed weapons and three wearable crowns exist in the running g
         end end
         assert(parts>=25,'Detailed geometry missing: '..name)
     end
-    assert(#sim.services.ReplicatedStorage.FN_CrownModels:GetChildren()==3)
+    assert(not sim.services.ReplicatedStorage:FindFirstChild('FN_CrownModels'))
+    assert(not player.Character:FindFirstChild('FN_WornCrown') and not player.Character.Head:FindFirstChild('FN_CrownBadge'))
 end)
 test('owned loadout includes five weapons while nonowners receive exactly three free guns',function()
     local function count(p)
@@ -128,8 +127,8 @@ test('owned loadout includes five weapons while nonowners receive exactly three 
     assert(not opponent.Backpack:FindFirstChild('VOID REAPER'))
     assert(opponent.Character:FindFirstChildOfClass('Tool'):GetAttribute('FNWeapon')=='BeanBlaster')
 end)
-test('all ten paid catalog items and all seven cloud cosmetics are present in the Armory',function()
-    local names={'VOID REAPER','ION STRIKER','VIP OPERATOR','DOUBLE COINS','250 COINS','1,200 COINS','4,000 COINS','VANGUARD CROWN','SOVEREIGN CROWN','ECLIPSE CROWN'}
+test('all seven paid catalog items and all seven cloud cosmetics are present in the Armory',function()
+    local names={'VOID REAPER','ION STRIKER','VIP OPERATOR','DOUBLE COINS','250 COINS','1,200 COINS','4,000 COINS'}
     for _,name in ipairs(names) do
         local card=armory.Offers:FindFirstChild(name)
         assert(card and card.ItemPreview and card.Robux)
@@ -137,9 +136,9 @@ test('all ten paid catalog items and all seven cloud cosmetics are present in th
     end
     for _,skin in ipairs(config.Cosmetics) do assert(armory.Offers:FindFirstChild(skin.Name)) end
 end)
-test('both premium weapon and all three crown cards contain real 3D previews',function()
+test('both premium weapon cards contain real 3D previews and crown shop tab is removed',function()
     for _,name in ipairs({'IonStriker','VoidReaper'}) do assert(armory.Offers:FindFirstChild(config.Weapons[name].Display).ItemPreview.ModelPreview) end
-    for _,crown in ipairs(config.Crowns) do assert(armory.Offers:FindFirstChild(crown.Name).ItemPreview.ModelPreview) end
+    assert(not armory.Tabs:FindFirstChild('Crowns'))
 end)
 test('coin purchase prompts use the correct developer product and cancel cleanly',function()
     local card=armory.Offers:FindFirstChild('250 COINS')
@@ -161,37 +160,15 @@ test('all three real product IDs deliver exact coins and reject duplicate receip
     sim:step(0)
     assert(armory.Balance.Text:find(tostring(expected),1,true))
 end)
-test('owned crowns equip, can be removed, and leave no duplicate models',function()
-    for _,crown in ipairs(config.Crowns) do
-        sim:step(.4);remotes.Shop.OnServerEvent:Fire(player,'EquipCrown',crown.Id);sim:step(0)
-        local wearable=player.Character:FindFirstChild('FN_WornCrown')
-        assert(wearable and wearable.ClassName=='Accessory')
-        local badge=player.Character.Head:FindFirstChild('FN_CrownBadge')
-        assert(badge and badge.ClassName=='BillboardGui' and badge.Adornee==player.Character.Head and badge.AlwaysOnTop)
-        assert(#badge:GetChildren()==4 and badge.CrownBand and badge.CrownPoint)
-        assert(player.Character.Head.Transparency==0 and player.CameraMinZoomDistance>=5)
-        assert(wearable.Handle.Transparency==1 and not wearable.Handle.CanCollide)
-        local visible=0
-        for _,piece in ipairs(wearable:GetChildren()) do
-            if piece:IsA('BasePart') and piece.Name~='Handle' then
-                assert(piece.Transparency==0 and not piece.Anchored)
-                visible+=1
-            end
-        end
-        assert(visible==24)
-        player.Character.Head.LocalTransparencyModifier=1
-        for _,part in ipairs(wearable:GetDescendants()) do
-            if part:IsA('BasePart') then part.LocalTransparencyModifier=1 end
-        end
-        sim.actions.FN_v2_ShoulderAim(1/60)
-        assert(player.Character.Head.LocalTransparencyModifier==0)
-        for _,part in ipairs(wearable:GetDescendants()) do
-            if part:IsA('BasePart') then assert(part.LocalTransparencyModifier==0) end
-        end
-    end
-    sim:step(.4);remotes.Shop.OnServerEvent:Fire(player,'EquipCrown','None');sim:step(0)
+test('no crown passes, purchase offers, preview models or equip UI are exposed',function()
+    assert(config.Crowns==nil)
+    assert(not sim.services.ReplicatedStorage:FindFirstChild('FN_CrownModels'))
     assert(not player.Character:FindFirstChild('FN_WornCrown'))
     assert(not player.Character.Head:FindFirstChild('FN_CrownBadge'))
+    assert(not armory.Tabs:FindFirstChild('Crowns'))
+    assert(not armory.Offers:FindFirstChild('VANGUARD CROWN'))
+    assert(not armory.Offers:FindFirstChild('SOVEREIGN CROWN'))
+    assert(not armory.Offers:FindFirstChild('ECLIPSE CROWN'))
 end)
 test('desktop, phone and tablet shop dimensions fit their viewports',function()
     local camera=sim.workspace.CurrentCamera
@@ -259,13 +236,11 @@ test('premium hits respect spawn protection, pierce shields, and deliver the adv
     assert(hum.Health==0)
     sim.rayResult=nil
 end)
-test('a newly purchased pass delivers its gun and crown to a former nonowner',function()
+test('a newly purchased premium gun pass delivers its weapon to a former nonowner',function()
     sim:spawnCharacter(opponent);sim:step(.7)
-    sim.owned[43]={[config.Passes.IonStriker]=true,[config.Crowns[1].PassId]=true}
+    sim.owned[43]={[config.Passes.IonStriker]=true}
     sim.services.MarketplaceService.PromptGamePassPurchaseFinished:Fire(opponent,config.Passes.IonStriker,true);sim:step(0)
     assert(opponent.Character:FindFirstChildOfClass('Tool'):GetAttribute('FNWeapon')=='IonStriker')
-    sim.services.MarketplaceService.PromptGamePassPurchaseFinished:Fire(opponent,config.Crowns[1].PassId,true);sim:step(0)
-    assert(opponent.Character:FindFirstChild('FN_WornCrown'))
 end)
 print(tostring(passed)..' full-source integration simulations passed (not Roblox engine tests)')
 '''
