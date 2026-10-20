@@ -27,7 +27,7 @@ local SelectWeapon = Remotes:WaitForChild("SelectWeapon")
 local HitConfirm = Remotes:WaitForChild("HitConfirm")
 local Slide = Remotes:WaitForChild("Slide")
 
-local data = {Coins = 0, XP = 0, Level = 1, KOs = 0, Deaths = 0, Unlocks = {Mint=true}, Equipped = "Mint", VIP=false, DoubleCoins=false, Crowns={}, EquippedCrown="None", Ready=false, Ammo={}, Reloads={}}
+local data = {Coins = 0, XP = 0, Level = 1, KOs = 0, Deaths = 0, Unlocks = {Mint=true}, Equipped = "Mint", VIP=false, DoubleCoins=false, PremiumWeapons={}, Crowns={}, EquippedCrown="None", Ready=false, Ammo={}, Reloads={}}
 local equipped, firing, lastLocalShot = nil, false, -1000
 local lastNoGunToast = -1000
 local firstShotSent = false
@@ -235,12 +235,12 @@ local shopButton=btn("ShopOpen",gui,"THE ARMORY  [M]",UDim2.fromOffset(18,154),U
 local guide=lbl("Guide",gui,"RMB AIM   /   R RELOAD   /   SHIFT SPRINT   /   CTRL SLIDE",UDim2.new(.5,-275,1,-97),UDim2.fromOffset(550,18),10,C.Muted)
 guide.TextXAlignment=Enum.TextXAlignment.Center
 local gunButtons={}
-local hotbar=el("Frame","Hotbar",gui,{AnchorPoint=Vector2.new(.5,1),Position=UDim2.new(.5,0,1,-18),Size=UDim2.fromOffset(362,62),BackgroundTransparency=1})
+local hotbar=el("Frame","Hotbar",gui,{AnchorPoint=Vector2.new(.5,1),Position=UDim2.new(.5,0,1,-18),Size=UDim2.fromOffset(500,68),BackgroundTransparency=1})
 local hotbarScale=el("UIScale","Responsive",hotbar,{Scale=1})
 for i,name in ipairs(Config.WeaponOrder) do
     local w=Config.Weapons[name]
-    local b=btn(name,hotbar,i.."  /  "..w.Display,UDim2.fromOffset((i-1)*121,0),UDim2.fromOffset(115,60),C.Card)
-    b.TextColor3=C.White;b.TextSize=10;border(b,w.Color,1.5);gunButtons[name]=b
+    local b=btn(name,hotbar,i.."  /  "..w.Display,UDim2.fromOffset((i-1)*100,0),UDim2.fromOffset(94,68),C.Card)
+    b.TextColor3=C.White;b.TextSize=10;b.TextWrapped=true;border(b,w.Color,1.5);gunButtons[name]=b
 end
 
 -- Earned cosmetics and optional Robux offers occupy separate tabs.
@@ -256,14 +256,16 @@ shopStatus.TextWrapped=true
 local closeButton=btn("Close",shopPanel,"×",UDim2.new(1,-58,0,16),UDim2.fromOffset(40,40),C.Card)
 closeButton.TextColor3=C.White;closeButton.TextSize=24
 local tabs={};local activeTab="Skins"
-for i,key in ipairs({"Skins","Crowns","Passes","Coins","Settings"}) do
-    local b=btn(key,shopPanel,string.upper(key),UDim2.new((i-1)/5,8,0,114),UDim2.new(1/5,-12,0,38),C.Card)
-    b.TextColor3=C.White;b.TextSize=11;tabs[key]=b
+local tabStrip=el("ScrollingFrame","Tabs",shopPanel,{Position=UDim2.fromOffset(14,114),Size=UDim2.new(1,-28,0,42),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=3,ScrollingDirection=Enum.ScrollingDirection.X,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.X})
+el("UIListLayout","TabLayout",tabStrip,{FillDirection=Enum.FillDirection.Horizontal,Padding=UDim.new(0,6),SortOrder=Enum.SortOrder.LayoutOrder})
+for i,key in ipairs({"Skins","Guns","Crowns","Passes","Coins","Settings"}) do
+    local b=btn(key,tabStrip,string.upper(key),UDim2.new(),UDim2.fromOffset(96,38),C.Card)
+    b.LayoutOrder=i;b.TextColor3=C.White;b.TextSize=11;tabs[key]=b
 end
 local shopScroll=el("ScrollingFrame","Offers",shopPanel,{Position=UDim2.fromOffset(16,166),Size=UDim2.new(1,-32,1,-216),BackgroundTransparency=1,ScrollBarThickness=4,ScrollBarImageColor3=C.Cyan,BorderSizePixel=0,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y})
 local layout=el("UIListLayout","Layout",shopScroll,{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder})
 el("UIPadding","Padding",shopScroll,{PaddingBottom=UDim.new(0,14)})
-local footer=lbl("Footer",shopPanel,"COSMETIC STYLE. EQUAL FIREPOWER.",UDim2.new(0,20,1,-40),UDim2.new(1,-40,0,26),10,C.Muted)
+local footer=lbl("Footer",shopPanel,"PREMIUM GUNS HAVE COMBAT ADVANTAGES.",UDim2.new(0,20,1,-40),UDim2.new(1,-40,0,26),10,C.Muted)
 footer.TextWrapped=true;footer.TextXAlignment=Enum.TextXAlignment.Center
 local cosmeticButtons,paidOffers,cards={},{},{}
 local function offer(name,desc,color,category,order)
@@ -290,22 +292,24 @@ for i,skin in ipairs(Config.Cosmetics) do
     end)
 end
 local pendingPurchase=nil
+local shopOpen
 local function refreshPaid()
     for _,entry in ipairs(paidOffers) do
-        local owned=entry.CrownId and data.Crowns[entry.CrownId] or entry.Key=="VIP" and data.VIP or entry.Key=="DoubleCoins" and data.DoubleCoins
-        local enabled=data.Ready and not pendingPurchase and ((owned and entry.CrownId~=nil) or (entry.Id>0 and entry.Available and not owned))
+        local owned=entry.Weapon and data.PremiumWeapons[entry.Key] or entry.CrownId and data.Crowns[entry.CrownId] or entry.Key=="VIP" and data.VIP or entry.Key=="DoubleCoins" and data.DoubleCoins
+        local enabled=data.Ready and not pendingPurchase and ((owned and (entry.CrownId~=nil or entry.Weapon~=nil)) or (entry.Id>0 and entry.Available and not owned))
         entry.Button.Active=enabled;entry.Button.Selectable=enabled
         entry.Button.BackgroundColor3=enabled and C.Gold or C.Card
         entry.Button.TextColor3=enabled and C.Panel or C.Muted
-        entry.Button.Text=owned and entry.CrownId and (data.EquippedCrown==entry.CrownId and "REMOVE" or "WEAR") or owned and "OWNED" or entry.Id<=0 and "COMING SOON" or pendingPurchase and "PLEASE WAIT" or not data.Ready and "CONNECTING" or not entry.Available and "UNAVAILABLE" or entry.Price
+        entry.Button.Text=owned and entry.Weapon and "EQUIP" or owned and entry.CrownId and (data.EquippedCrown==entry.CrownId and "REMOVE" or "WEAR") or owned and "OWNED" or entry.Id<=0 and "COMING SOON" or pendingPurchase and "PLEASE WAIT" or not data.Ready and "CONNECTING" or not entry.Available and "UNAVAILABLE" or entry.Price
     end
     shopStatus.Text=not data.Ready and "PRACTICE MODE · Saving and purchases are unavailable." or pendingPurchase and "Complete or cancel the Roblox prompt. Coins arrive after confirmation." or "PROGRESS SAVED ONLINE · Purchases are optional. Roblox confirms the final price."
 end
 local function robuxOffer(key,title,kind,id,description,order,crown)
-    local frame=offer(title,description,crown and crown.Color or C.Gold,crown and "Crowns" or kind=="Pass" and "Passes" or "Coins",order)
+    local weapon=Config.Weapons[key]
+    local frame=offer(title,description,crown and crown.Color or weapon and weapon.Color or C.Gold,crown and "Crowns" or weapon and "Guns" or kind=="Pass" and "Passes" or "Coins",order)
     local b=btn("Robux",frame,"COMING SOON",UDim2.new(1,-154,1,-40),UDim2.fromOffset(140,32),C.Gold)
     b.TextSize=11
-    local entry={Key=key,Kind=kind,Id=id,CrownId=crown and crown.Id,Button=b,Available=false,Price="UNAVAILABLE"}
+    local entry={Key=key,Kind=kind,Id=id,Weapon=weapon,CrownId=crown and crown.Id,Button=b,Available=false,Price="UNAVAILABLE"}
     if id<=0 and Config.LaunchPrices[key] then
         lbl("LaunchPrice",frame,"PLANNED R$ "..Config.LaunchPrices[key],UDim2.new(0,28,1,-40),UDim2.new(1,-192,0,32),11,C.Gold)
     end
@@ -321,6 +325,7 @@ local function robuxOffer(key,title,kind,id,description,order,crown)
     end
     b.Activated:Connect(function()
         if not b.Active or pendingPurchase or not data.Ready then return end
+        if weapon and data.PremiumWeapons[key] then SelectWeapon:FireServer(key);shopOpen(false);return end
         if crown and data.Crowns[crown.Id] then
             Shop:FireServer("EquipCrown",data.EquippedCrown==crown.Id and "None" or crown.Id)
             return
@@ -335,6 +340,8 @@ local function robuxOffer(key,title,kind,id,description,order,crown)
         if not ok then pendingPurchase=nil;refreshPaid();toast("The store is unavailable. Please try again later.") end
     end)
 end
+robuxOffer("VoidReaper","VOID REAPER","Pass",Config.Passes.VoidReaper,"Permanent · 100 HP/hit · shield piercing · slow fire · 3-shot magazine",1)
+robuxOffer("IonStriker","ION STRIKER","Pass",Config.Passes.IonStriker,"Permanent · 50 HP/hit · shield piercing · two hits vs 100 HP",2)
 robuxOffer("VIP","VIP OPERATOR","Pass",Config.Passes.VIP,"Permanent · Prism cloud + gold name tag. No combat boost.",1)
 robuxOffer("DoubleCoins","DOUBLE COINS","Pass",Config.Passes.DoubleCoins,"Permanent · 2× earned gameplay coins. Purchased packs stay unchanged.",2)
 robuxOffer("Coin250","250 COINS","Product",Config.Products.Coin250,"Repeatable · 250 coins for cosmetic unlocks",1)
@@ -422,7 +429,7 @@ MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId,id,purc
     pendingPurchase=nil;refreshPaid()
     if purchased then toast("Purchase received. Your coins are being confirmed…") end
 end)
-local function shopOpen(yes)
+shopOpen=function(yes)
     darken.Visible=yes;player:SetAttribute("FN_MenuOpen",yes)
     firing=false;Sprint:FireServer(false);player:SetAttribute("FN_GamepadAim",false)
     UserInputService.MouseBehavior=Enum.MouseBehavior.Default
@@ -446,7 +453,7 @@ local briefing=panel("Briefing",gui,UDim2.new(.5,0,.32,0),UDim2.fromOffset(350,1
 briefing.AnchorPoint=Vector2.new(.5,0);briefing.ZIndex=5
 lbl("Eyebrow",briefing,"OPERATOR BRIEFING",UDim2.fromOffset(18,12),UDim2.fromOffset(314,20),11,C.Cyan)
 lbl("Title",briefing,"DROP IN. STAND OUT.",UDim2.fromOffset(18,37),UDim2.fromOffset(314,27),22)
-local instructions=lbl("Instructions",briefing,"Eliminate rivals. Collect coins. Stay inside the gas ring. Every weapon is free.",UDim2.fromOffset(18,68),UDim2.fromOffset(314,42),12,C.Muted)
+local instructions=lbl("Instructions",briefing,"Eliminate rivals. Collect coins. Stay inside the gas ring. Three starter guns. Premium weapons in the Armory.",UDim2.fromOffset(18,68),UDim2.fromOffset(314,42),12,C.Muted)
 instructions.TextWrapped=true
 local deploy=btn("Deploy",briefing,"LET'S PLAY",UDim2.fromOffset(18,119),UDim2.fromOffset(314,32),C.Cyan)
 for _,o in ipairs(briefing:GetDescendants()) do if o:IsA("GuiObject") then o.ZIndex=6 end end
@@ -475,7 +482,7 @@ local function resizeHUD()
     local size=camera.ViewportSize
     local compact=size.X<1000
     local scale=compact and math.min(.78,math.max(.5,(size.X-180)/264)) or 1
-    statsScale.Scale=scale;vitalsScale.Scale=scale;ammoScale.Scale=compact and .78 or 1;hotbarScale.Scale=compact and .78 or 1
+    statsScale.Scale=scale;vitalsScale.Scale=scale;ammoScale.Scale=compact and .78 or 1;hotbarScale.Scale=compact and math.min(.78,(size.X-24)/500) or 1
     shopButton.Position=UDim2.fromOffset(18,compact and 126 or 154)
     shopButton.Size=UDim2.fromOffset(compact and 206 or 224,36)
     shopButton.Text=touch and "THE ARMORY" or UserInputService.GamepadEnabled and "ARMORY [SELECT]" or "THE ARMORY [M]"
@@ -568,7 +575,7 @@ local function fireOnce()
     Shoot:FireServer(aim)
     if not firstShotSent then
         firstShotSent=true
-        print("[FART-NIGHT v2] Client fired with",name)
+        print("[FART-NIGHT v5] Client fired with",name)
     end
     cross.BackgroundColor3=w.Color
     task.delay(.07,function() if cross.Parent then cross.BackgroundColor3=Color3.new(1,1,1) end end)
@@ -622,6 +629,12 @@ player.CharacterAdded:Connect(function(char)
 end)
 if player.Character then watch(player.Character) end
 local function equipWeapon(name)
+    local spec=Config.Weapons[name]
+    if not spec then return end
+    if spec.PassKey and not data.PremiumWeapons[name] then
+        shopOpen(true);selectTab("Guns");toast("This weapon requires its permanent game pass.")
+        return
+    end
     if darken.Visible then shopOpen(false) end
     local hum=player.Character and player.Character:FindFirstChildOfClass("Humanoid")
     if not hum then return end
@@ -687,6 +700,8 @@ UserInputService.InputBegan:Connect(function(input,gameProcessed)
     if input.KeyCode==Enum.KeyCode.One then equipWeapon(Config.WeaponOrder[1]); return end
     if input.KeyCode==Enum.KeyCode.Two then equipWeapon(Config.WeaponOrder[2]); return end
     if input.KeyCode==Enum.KeyCode.Three then equipWeapon(Config.WeaponOrder[3]); return end
+    if input.KeyCode==Enum.KeyCode.Four then equipWeapon(Config.WeaponOrder[4]); return end
+    if input.KeyCode==Enum.KeyCode.Five then equipWeapon(Config.WeaponOrder[5]); return end
     if gameProcessed then return end
     if input.KeyCode==Enum.KeyCode.R then Reload:FireServer() end
     if input.KeyCode==Enum.KeyCode.LeftShift then Sprint:FireServer(true) end
@@ -720,9 +735,13 @@ local function padAction(action,state)
     elseif action=="FN_Sprint" then if began or ended then Sprint:FireServer(began) end
     elseif action=="FN_Slide" and began then Slide:FireServer()
     elseif (action=="FN_Next" or action=="FN_Previous") and began then
-        local current=table.find(Config.WeaponOrder,activeTool()) or 1
+        local available={}
+        for _,name in ipairs(Config.WeaponOrder) do
+            if not Config.Weapons[name].PassKey or data.PremiumWeapons[name] then table.insert(available,name) end
+        end
+        local current=table.find(available,activeTool()) or 1
         local delta=action=="FN_Next" and 1 or -1
-        equipWeapon(Config.WeaponOrder[(current-1+delta)%#Config.WeaponOrder+1])
+        equipWeapon(available[(current-1+delta)%#available+1])
     end
     return Enum.ContextActionResult.Sink
 end
@@ -785,13 +804,17 @@ local function burst(pos,color,count)
     p.Parent=anchor;p:Emit(player:GetAttribute("FN_LowFX") and math.min(count or 9,3) or (count or 9))
     Debris:AddItem(anchor,1.4)
 end
-FX.OnClientEvent:Connect(function(kind,a,b,c,shooterId)
+FX.OnClientEvent:Connect(function(kind,a,b,c,shooterId,pelletImpacts)
     if kind=="Shot" and typeof(a)=="Vector3" and typeof(b)=="Vector3" then
         if shooterId~=player.UserId then shotSound(c,a) end
         local w=Config.Weapons[c]
         local col=w and w.Color or Color3.new(1,1,1)
-        local delta=b-a
-        if delta.Magnitude<1 then return end
+        local points=type(pelletImpacts)=="table" and pelletImpacts or {b}
+        for i,impact in ipairs(points) do
+            if i>8 then break end
+            if typeof(impact)~="Vector3" then continue end
+        local delta=impact-a
+        if delta.Magnitude<.05 then continue end
         local tracer=Instance.new("Part")
         tracer.Name="FN_Tracer"
         tracer.Anchored=true;tracer.CanCollide=false;tracer.CanQuery=false;tracer.CanTouch=false
@@ -802,10 +825,11 @@ FX.OnClientEvent:Connect(function(kind,a,b,c,shooterId)
         local length=math.min(delta.Magnitude,110)
         local aim=delta.Unit
         tracer.Size=Vector3.new(.075,.075,length)
-        tracer.CFrame=CFrame.lookAt(a+aim*(length*.5),b)
+        tracer.CFrame=CFrame.lookAt(a+aim*(length*.5),impact)
         tracer.Parent=workspace
         Debris:AddItem(tracer,.075)
-        burst(b,col,5)
+        burst(impact,col,2)
+        end
     elseif kind=="Elim" and typeof(a)=="Vector3" then
         burst(a,Color3.fromRGB(154,255,105),35)
     end
@@ -824,6 +848,9 @@ RunService.RenderStepped:Connect(function()
     cross.Visible=name~=nil and not darken.Visible
     if fireButton then fireButton.Visible=name~=nil and not darken.Visible end
     for n,b in pairs(gunButtons) do
+        local locked=Config.Weapons[n].PassKey and not data.PremiumWeapons[n]
+        b.Text=(locked and "LOCKED\n" or tostring(table.find(Config.WeaponOrder,n)).." / ")..Config.Weapons[n].Display
+        b.TextColor3=locked and C.Muted or C.White
         b.BackgroundColor3=n==name and Color3.fromRGB(32,83,104) or C.Card
     end
     local w=name and Config.Weapons[name]
@@ -840,4 +867,4 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 RequestSync:FireServer()
-toast("Welcome to Neon City. Every weapon is ready. Make your mark.")
+toast("Welcome to Neon City. Your starter loadout is ready. Make your mark.")

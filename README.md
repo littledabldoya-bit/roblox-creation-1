@@ -1,22 +1,22 @@
 # FartNight: Neon City Arena
 
-Version 3.3 — gun/footstep effects, balanced neon accents, original soundtrack, and launch pricing.
+Version 5 — aligned shotgun tracers and premium weapon models/loadouts.
 
 Competitive sci-fi free-for-all built from the supplied Roblox Studio place.
-Open **FartNight.rbxlx** in Roblox Studio. The unchanged upload is retained in
+Open **fartnightv5.rbxlx** in Roblox Studio. The unchanged upload is retained in
 `assets/FartNight.original.rbxlx`.
 
 ## This version
 
 - Navy/cyan combat HUD, health and stamina meters, XP progression, low-ammo feedback,
   confirmed hit markers, elimination feed, and a first-spawn briefing.
-- Responsive Armory with separate Skins, Crowns, Passes, Coins, and Settings tabs.
+- Responsive Armory with separate Skins, Guns, Crowns, Passes, Coins, and Settings tabs.
   Paid offers show Roblox prices when configured; unconfigured offers say Coming Soon.
 - Keyboard, touch, and controller bindings; subtle recoil with a reduced-motion option;
   reduced impact-particle option. Preferences currently last for the session.
 - Subdued cyan accents, non-emissive broad surfaces, low bloom, gentler lamps, consistent district signage, and proximity health/shield labels.
 - Three permanent wearable crown passes (Vanguard, Sovereign, Eclipse), VIP cloud color/name tag and Double Coins passes, plus three repeatable coin packs. Crowns have wear/remove controls, survive respawn, and save the equipped selection; entitlement comes from Roblox.
-  All weapons are free; paid items do not change weapon damage or health.
+  Three starter guns remain free. Premium weapon passes provide a combat advantage as described below.
 - Persistent, idempotent receipt fulfillment, session leases, deferred fulfillment
   during storage failures, save retries on departure, and shutdown save completion.
 
@@ -33,7 +33,8 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 python3 tests/run_server_tests.py
 python3 tests/run_catalog_tests.py
 python3 tests/run_audio_tests.py
-python3 /workspace/roblox-tools/check_place.py FartNight.rbxlx
+python3 tests/run_combat_tests.py
+python3 /workspace/roblox-tools/check_place.py fartnightv5.rbxlx
 ```
 
 Cloud tools are outside the checkout in `/workspace/roblox-tools`. Rebuild before
@@ -42,7 +43,7 @@ exported to `src/`; reconcile them before rebuilding. Keep the original upload i
 
 ## Enable real purchases
 
-The experience is not published and **all product/pass IDs remain zero**.
+The user has published Fart-Night; **all configured product/pass IDs still remain zero**.
 The current place is a development candidate, not a verified live release.
 
 1. Open the updated place in Studio and publish it as a **private test experience**
@@ -55,6 +56,8 @@ The current place is a development candidate, not a verified live release.
 
 | Config key | Roblox item | Delivery | Launch price (Robux) |
 | --- | --- | --- | ---: |
+| `Passes.VoidReaper` | Game pass | Permanent Void Reaper: one 100-HP shield-piercing hit | 499 |
+| `Passes.IonStriker` | Game pass | Permanent Ion Striker: two 50-HP shield-piercing hits | 249 |
 | `Passes.VIP` | Game pass | Permanent Prism cloud color and gold overhead tag | 149 |
 | `Passes.DoubleCoins` | Game pass | Permanent 2× earned gameplay coins | 99 |
 | `Crowns[1].PassId` | Game pass | Permanent wearable Vanguard crown | 49 |
@@ -154,3 +157,55 @@ Simulated-service tests cover effect triggering, voice culling/cleanup and
 footstep movement/airborne/respawn behavior. Verify actual asset playback and
 mixing in Studio, with Roblox Settings volume above zero, plus two clients for
 remote footsteps/shots. Audio playback has not been tested in the Roblox engine.
+
+## v5 weapon changes
+
+The generated Studio deliverable is now **fartnightv5.rbxlx**. The old unversioned
+output has been removed to avoid opening an outdated copy. Open the new file and
+publish it over the existing Fart-Night place; do not create a second experience.
+The existing music ID `86882641437260` remains configured.
+
+Burp Cannon's visible center tracer now follows the crosshair ray exactly. Its
+other seven pellet tracers show the real server raycast endpoints, rather than
+showing a randomly offset pellet as the whole shot. Cylinder geometry now uses
+Roblox's actual local-X cylinder axis, rotated into the weapon's forward axis;
+the previous model rotated the wrong axis. The center muzzle sits between the
+twin bores. Spread and damage remain server owned.
+
+| Premium gun | Health damage | Fire interval | Magazine / reload | Launch price |
+| --- | ---: | ---: | --- | ---: |
+| Void Reaper | 100 per hit | 1.65 s | 3 / 3.0 s | R$499 |
+| Ion Striker | 50 per hit | 0.4 s | 12 / 2.4 s | R$249 |
+
+Both premium guns bypass shields and use a 1.0 headshot multiplier. Against a
+normal 100-health player, Void Reaper takes one hit and Ion Striker takes two,
+including through 100 shield. Spawn ForceFields still protect players. These are
+explicit paid combat advantages, not cosmetic-only purchases. Different maximum
+health, healing between hits, misses and invulnerability change elimination counts.
+
+The procedural welded metal models have distinct long split-rail / compact twin-rail
+silhouettes, scopes, cooling fins, receiver bolts, magazines and energy coils.
+They require no imported marketplace models. Verify their appearance and avatar
+fit in Studio; no engine-rendered visual review has been performed in this workspace.
+
+Create **two additional game passes** under Fart-Night in Creator Hub. Put their
+real IDs into `Config.Passes.VoidReaper` and `Config.Passes.IonStriker`, set the
+prices above, rebuild, and publish. These IDs are currently zero. Paid offers stay
+Coming Soon in published servers until configured. Ownership is queried on the
+server at join and verified again after purchase. Nonowners cannot receive,
+select, reload or deal damage with a premium weapon via spoofed client requests.
+The original three weapons remain in StarterPack; paid weapons are never put there.
+
+`Config.StudioPremiumPreview = true` enables the two guns **only when the server
+reports RunService:IsStudio()**. It makes slots 4 and 5 available during a Studio
+playtest without purchasing passes or enabling DataStores. It does not apply in
+published/private Roblox servers. Set it false when testing the real purchase gate.
+Keys 1–5 select weapons, controller cycling skips locked guns, and touch has five
+loadout buttons. Scroll the Armory tab strip on narrow screens to see all sections.
+
+Before publishing: test Burp Cannon at near/mid range against a wall and dummy;
+check that the center beam meets the crosshair and spread impacts match pellets.
+Run `tests/studio_weapon_checks.luau` from Studio's **server** command bar during
+Play for barrel geometry checks. Check both premium weapons against a second
+100-HP player with and without shields, and repeat with spawn protection active.
+Test genuine ownership in a private published server after setting the pass IDs.

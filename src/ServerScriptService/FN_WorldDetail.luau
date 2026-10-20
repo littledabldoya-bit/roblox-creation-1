@@ -33,7 +33,7 @@ bloom.Intensity=.09;bloom.Size=12;bloom.Threshold=1.8
 atmo.Glare=0;atmo.Haze=.8
 color.Contrast=.04;color.Saturation=.03
 local signs={
-    FN_Sign_HYPERMART={"HYPER MART","GEAR UP · EQUAL FIREPOWER"},
+    FN_Sign_HYPERMART={"HYPER MART","SPECIALIST ARMORY"},
     FN_Sign_GASWORKS={"GASWORKS","PRESSURE DISTRICT"},
     FN_Sign_SKYDOCK={"SKY DOCK","CONTAINERS + ROOFTOPS"},
     FN_Sign_NEONMILE={"NEON MILE","HIGH GROUND = HIGH RISK"},
@@ -85,4 +85,4 @@ for _,p in ipairs(arena:GetDescendants()) do
         end
     end
 end
-print("[FART-NIGHT v2] World details and illuminated district signs online")
+print("[FART-NIGHT v5] World details and illuminated district signs online")

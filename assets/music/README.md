@@ -13,7 +13,7 @@ or recordings. The MP3 is mastered for background use near -16 LUFS with headroo
 2. Grant the target experience permission to use the audio in its asset settings.
 3. Copy the numeric audio asset ID to `Config.Music.SoundId` in
    `src/ReplicatedStorage/FN_Config.luau`.
-4. Rebuild `FartNight.rbxlx` and republish the place. Confirm playback in Studio and
+4. Rebuild `fartnightv5.rbxlx` and republish the place. Confirm playback in Studio and
    in a private published server. Armory → Settings → Arena Music controls muting;
    opening the Armory reduces volume. Music does not restart on character respawn.
 

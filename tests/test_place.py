@@ -12,7 +12,7 @@ spec.loader.exec_module(builder)
 def canonical(node):
     if node.tag == 'ProtectedString' and node.get('name') == 'Source':
         return ('script-source',)
-    if node.tag == 'Item' and node.get('referent') == 'FN_Economy_Module':
+    if node.tag == 'Item' and node.get('referent') in {'FN_Economy_Module', 'FN_Combat_Module'}:
         return None
     children = [canonical(child) for child in node]
     return (node.tag, tuple(sorted(node.attrib.items())), (node.text or '').strip(),
@@ -46,8 +46,8 @@ class PlaceTests(unittest.TestCase):
         items = {node.find("./Properties/string[@name='Name']").text: node
                  for node in self.current.iter('Item')
                  if node.get('class') in {'Script', 'LocalScript', 'ModuleScript'}}
-        self.assertEqual(len(items), 6)
-        for name, directory in {**builder.SCRIPTS, 'FN_Economy': 'ReplicatedStorage'}.items():
+        self.assertEqual(len(items), 7)
+        for name, directory in {**builder.SCRIPTS, 'FN_Economy': 'ReplicatedStorage', 'FN_Combat': 'ReplicatedStorage'}.items():
             expected = (ROOT / 'src' / directory / f'{name}.luau').read_text()
             self.assertEqual(items[name].find("./Properties/ProtectedString[@name='Source']").text, expected)
 
@@ -60,7 +60,7 @@ class PlaceTests(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)))
         original = collections.Counter(item.get('class') for item in self.original.iter('Item'))
         current = collections.Counter(item.get('class') for item in self.current.iter('Item'))
-        original['ModuleScript'] += 1
+        original['ModuleScript'] += 2
         self.assertEqual(original, current)
 
     def test_repeat_build_produces_identical_place(self):

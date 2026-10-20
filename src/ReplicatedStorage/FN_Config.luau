@@ -3,7 +3,9 @@
 local Config = {}
 
 Config.GameName = "FART-NIGHT"
-Config.Version = "3.3.0"
+Config.Version = "5.0.0"
+-- Test premium weapons in Studio only; never grants ownership in published servers.
+Config.StudioPremiumPreview = true
 Config.ArenaRadius = 255
 Config.RespawnSeconds = 3
 Config.CoinPickupValue = 5
@@ -23,7 +25,9 @@ Config.Weapons = {
     BurpCannon = { Display = "BURP CANNON", Damage = 9, FireDelay = 0.88, Magazine = 7, Reload = 2.2, Range = 120, Pellets = 8, Spread = 0.095, Color = Color3.fromRGB(244, 222, 69), Automatic = false },
     ToxicTagger = { Display = "TOXIC TAGGER", Damage = 46, FireDelay = 1.10, Magazine = 8, Reload = 2.6, Range = 650, Pellets = 1, Spread = 0.001, Color = Color3.fromRGB(175, 99, 254), Automatic = false },
 }
-Config.WeaponOrder = {"BeanBlaster", "BurpCannon", "ToxicTagger"}
+Config.Weapons.VoidReaper = {Display="VOID REAPER", Damage=100, HeadMultiplier=1, ShieldPiercing=true, PassKey="VoidReaper", FireDelay=1.65, Magazine=3, Reload=3.0, Range=750, Pellets=1, Spread=0, Color=Color3.fromRGB(222,111,245), Automatic=false}
+Config.Weapons.IonStriker = {Display="ION STRIKER", Damage=50, HeadMultiplier=1, ShieldPiercing=true, PassKey="IonStriker", FireDelay=.4, Magazine=12, Reload=2.4, Range=500, Pellets=1, Spread=.002, Color=Color3.fromRGB(93,204,255), Automatic=false}
+Config.WeaponOrder = {"BeanBlaster", "BurpCannon", "ToxicTagger", "VoidReaper", "IonStriker"}
 
 -- Owned/equipped outfit accent colors; these are the fun unlocks, not stat buffs.
 Config.Cosmetics = {
@@ -37,6 +41,8 @@ Config.Cosmetics = {
 }
 
 Config.Passes = {
+    VoidReaper = 0, -- permanent premium one-shot railgun
+    IonStriker = 0, -- permanent premium two-shot rifle
     VIP = 0, -- exclusive VIP Prism cosmetic + golden VIP tag (no damage buffs)
     DoubleCoins = 0, -- 2x coins earned from gameplay; no combat stat advantage
 }
@@ -54,7 +60,7 @@ Config.Products = {
 }
 -- Creator Hub launch prices (Robux). Metadata only: Roblox remains authoritative.
 Config.LaunchPrices = {
-    VIP = 149, DoubleCoins = 99,
+    VIP = 149, DoubleCoins = 99, VoidReaper = 499, IonStriker = 249,
     Vanguard = 49, Sovereign = 99, Eclipse = 149,
     Coin250 = 19, Coin1200 = 79, Coin4000 = 199,
 }
@@ -69,6 +75,8 @@ Config.Audio = {
     Reload = "rbxasset://sounds/action_get_up.mp3",
     Hit = "rbxasset://sounds/action_jump_land.mp3",
     Weapons = {
+        VoidReaper = {SoundId = "rbxasset://sounds/action_jump_land.mp3", Speed = .45, Volume = .85},
+        IonStriker = {SoundId = "rbxasset://sounds/action_jump_land.mp3", Speed = .95, Volume = .7},
         BeanBlaster = {SoundId = "rbxasset://sounds/action_jump_land.mp3", Speed = 1.8, Volume = .6},
         BurpCannon = {SoundId = "rbxasset://sounds/action_jump_land.mp3", Speed = .65, Volume = .8},
         ToxicTagger = {SoundId = "rbxasset://sounds/action_jump_land.mp3", Speed = 2.5, Volume = .7},

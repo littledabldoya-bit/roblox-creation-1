@@ -52,19 +52,21 @@ def build():
                     replace, template, flags=re.S)
     if seen != set(SCRIPTS):
         raise ValueError(f'Missing original scripts: {set(SCRIPTS)-seen}')
-    # Add a pure, independently testable economy module beside FN_Config.
-    economy = (ROOT / 'src/ReplicatedStorage/FN_Economy.luau').read_text()
+    # Add independently testable shared economy/combat rules beside FN_Config.
     config_start = result.index('<Item class="ModuleScript"')
-    module = ('<Item class="ModuleScript" referent="FN_Economy_Module">'
-              '<Properties><string name="Name">FN_Economy</string>'
-              '<ProtectedString name="Source">' + cdata(economy) +
-              '</ProtectedString></Properties></Item>')
-    result = result[:config_start] + module + result[config_start:]
+    modules = []
+    for name in ('FN_Economy', 'FN_Combat'):
+        source = (ROOT / f'src/ReplicatedStorage/{name}.luau').read_text()
+        modules.append('<Item class="ModuleScript" referent="' + name + '_Module">'
+                       '<Properties><string name="Name">' + name + '</string>'
+                       '<ProtectedString name="Source">' + cdata(source) +
+                       '</ProtectedString></Properties></Item>')
+    result = result[:config_start] + ''.join(modules) + result[config_start:]
     result = soften_visuals(result)
     ET.fromstring(result)
-    output = ROOT / 'FartNight.rbxlx'
+    output = ROOT / 'fartnightv5.rbxlx'
     output.write_text(result)
-    print(f'Built {output.name}: {len(seen)+1} scripts')
+    print(f'Built {output.name}: {len(seen)+2} scripts')
     return output
 
 if __name__ == '__main__':

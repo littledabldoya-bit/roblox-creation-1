@@ -24,7 +24,7 @@ for key,id in pairs(config.Products) do
     assert(type(id)=='number' and id>=0 and id%1==0,'Invalid product ID')
     assert(config.ProductAwards[key]>0,'Missing product delivery quantity')
 end
-assert(count==8,'Expected prices for two perk passes, three crowns, and three coin packs')
+assert(count==10,'Expected prices for four passes, three crowns, and three coin packs')
 print('PASS every monetized item has a valid launch price and catalog entry')
 local small=config.LaunchPrices.Coin250/config.ProductAwards.Coin250
 local medium=config.LaunchPrices.Coin1200/config.ProductAwards.Coin1200

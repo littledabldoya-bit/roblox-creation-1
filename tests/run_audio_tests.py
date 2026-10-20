@@ -74,7 +74,7 @@ test('each weapon emits an immediate effect with distinct playback pitch',functi
         local current=sounds();assert(#current==before+1 and current[#current].IsPlaying)
         pitches[current[#current].PlaybackSpeed]=true
     end
-    local count=0;for _ in pairs(pitches) do count+=1 end;assert(count==3)
+    local count=0;for _ in pairs(pitches) do count+=1 end;assert(count==#Config.WeaponOrder)
     clearShots()
 end)
 test('distant or unknown shots are culled',function()

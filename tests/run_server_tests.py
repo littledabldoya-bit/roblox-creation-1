@@ -12,7 +12,11 @@ server = (ROOT / 'src/ServerScriptService/FN_Server.luau').read_text()
 prefix = server.split('-- Coins are continuous,')[0]
 harness = r'''
 local Economy=require('../src/ReplicatedStorage/FN_Economy')
+local Combat=require('../src/ReplicatedStorage/FN_Combat')
 local config={Cosmetics={{Id='Mint',Name='Mint',Cost=0}},WeaponOrder={},Products={Coin250=101},ProductAwards={Coin250=250},Passes={VIP=0,DoubleCoins=0},RespawnSeconds=3}
+config.Passes.VoidReaper=301;config.Passes.IonStriker=302
+config.Weapons={VoidReaper={PassKey='VoidReaper',Display='VOID REAPER'},IonStriker={PassKey='IonStriker',Display='ION STRIKER'}}
+config.WeaponOrder={'VoidReaper','IonStriker'}
 config.Crowns={{Id="Vanguard",PassId=201},{Id="Sovereign",PassId=202},{Id="Eclipse",PassId=203}}
 local record=nil
 local fail=false
@@ -52,7 +56,7 @@ local workspace={WaitForChild=function() return {} end}
 local Random={new=function() return {} end}
 local Enum={ProductPurchaseDecision={NotProcessedYet='retry',PurchaseGranted='granted'}}
 local warn=function() end
-local require=function(name) if name=='FN_Config' then return config elseif name=='FN_Economy' then return Economy end error(name) end
+local require=function(name) if name=='FN_Config' then return config elseif name=='FN_Economy' then return Economy elseif name=='FN_Combat' then return Combat end error(name) end
 local api=(function()
 '''+prefix+r'''
 return {save=save,sessions=sessions}
@@ -61,7 +65,7 @@ local state
 local function reset()
     record=Economy.normalize(nil,{Mint=true});record.Session={Owner='owner-A',Expires=os.time()+180}
     state={data=Economy.normalize(record,{Mint=true}),owner='owner-A',persistReady=true,leaseUntil=os.time()+180,
-        Crowns={},pendingCoins=0,pendingXP=0,pendingKOs=0,pendingDeaths=0,pendingUnlocks={},ammo={},reloading={},busy=false,streak=0}
+        Crowns={},PremiumWeapons={},pendingCoins=0,pendingXP=0,pendingKOs=0,pendingDeaths=0,pendingUnlocks={},ammo={},reloading={},busy=false,streak=0}
     api.sessions[player]=state;ownsPass=false;fail=false;loseResponse=false;calls=0;duringUpdate=nil
 end
 local passed=0
@@ -171,6 +175,13 @@ end)
 test('unknown pass cannot grant a crown',function()
     ownsPass=true;passFinished(player,999,true)
     assert(not state.Crowns.Vanguard and state.data.EquippedCrown=='None')
+end)
+test('premium gun passes require server confirmation before unlocking',function()
+    passFinished(player,301,false);assert(not state.PremiumWeapons.VoidReaper)
+    passFinished(player,301,true);assert(not state.PremiumWeapons.VoidReaper)
+    ownsPass=true;passFinished(player,301,true)
+    assert(state.PremiumWeapons.VoidReaper and not state.PremiumWeapons.IonStriker)
+    passFinished(player,302,true);assert(state.PremiumWeapons.IonStriker)
 end)
 print(tostring(passed)..' server persistence tests passed (simulated services)')
 '''

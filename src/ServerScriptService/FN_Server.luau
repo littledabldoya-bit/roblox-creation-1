@@ -11,6 +11,7 @@ local Lighting = game:GetService("Lighting")
 
 local Config = require(ReplicatedStorage:WaitForChild("FN_Config"))
 local Economy = require(ReplicatedStorage:WaitForChild("FN_Economy"))
+local Combat = require(ReplicatedStorage:WaitForChild("FN_Combat"))
 local HttpService = game:GetService("HttpService")
 local SESSION_SECONDS = 180
 local Arena = workspace:WaitForChild("FartNightArena")
@@ -54,7 +55,7 @@ local function sync(player)
     Sync:FireClient(player, {
         Coins = s.data.Coins, XP = s.data.XP, Level = math.floor(s.data.XP/300)+1, KOs = s.data.KOs, Deaths = s.data.Deaths,
         Unlocks = s.data.Unlocks, Equipped = s.data.Equipped, VIP = s.VIP,
-        Crowns = s.Crowns, EquippedCrown = s.data.EquippedCrown,
+        Crowns = s.Crowns, EquippedCrown = s.data.EquippedCrown, PremiumWeapons = s.PremiumWeapons,
         DoubleCoins = s.DoubleCoins, Ready = s.persistReady and os.time() < s.leaseUntil,
         Ammo = s.ammo, Reloads = s.reloading,
     })
@@ -252,9 +253,9 @@ local function finishWeapon(tool, weaponName)
     local function prism(label,x,y,z,sx,sy,sz,col,mat)
         return piece(label,Vector3.new(x,y,z),Vector3.new(sx,sy,sz),col,mat)
     end
-    local cylTilt=CFrame.Angles(math.pi/2,0,0)
+    local cylTilt=CFrame.Angles(0,math.pi/2,0)
     local function tube(label,x,y,z,diam,length,col,mat)
-        return piece(label,Vector3.new(x,y,z),Vector3.new(diam,length,diam),col,mat,Enum.PartType.Cylinder,cylTilt)
+        return piece(label,Vector3.new(x,y,z),Vector3.new(length,diam,diam),col,mat,Enum.PartType.Cylinder,cylTilt)
     end
     -- All profiles point along local -Z, the muzzle is on the true 3-D gun barrel.
     prism("CoreReceiver",0,.35,-.36,.96,.84,2.02,steel)
@@ -299,7 +300,7 @@ local function finishWeapon(tool, weaponName)
         prism("PumpRibLeft",-.48,-.11,-1.99,.12,.31,.82,chrome)
         prism("PumpRibRight",.48,-.11,-1.99,.12,.31,.82,chrome)
         muzzleZ=-4.02
-    else
+    elseif weaponName=="ToxicTagger" then
         -- Long precision rail rifle: free-floating barrel, real scope silhouette.
         prism("LongHandguard",0,.42,-2.02,.77,.48,2.2,dark)
         tube("FloatingBarrel",0,.34,-3.42,.24,3.35,chrome)
@@ -314,6 +315,50 @@ local function finishWeapon(tool, weaponName)
         prism("RailLeft",-.43,.48,-2.03,.1,.14,1.78,accent,Enum.Material.Neon)
         prism("RailRight",.43,.48,-2.03,.1,.14,1.78,accent,Enum.Material.Neon)
         muzzleZ=-5.40
+    elseif weaponName=="VoidReaper" then
+        -- Heavy split-rail accelerator: armored stock, scope, capacitors and barrel cage.
+        prism("ReaperReceiver",0,.4,-1.1,1.22,1.06,2.4,dark)
+        prism("ReaperStock",0,.18,1.8,.92,.86,1.55,steel)
+        prism("ShoulderPad",0,.18,2.65,1.04,1.08,.24,dark)
+        prism("CapacitorMagazine",0,-.8,-.75,.84,1.45,.82,steel)
+        tube("AcceleratorCore",0,.38,-3.7,.26,4.7,chrome)
+        for side=-1,1,2 do
+            prism("SplitRail",side*.48,.4,-3.5,.18,.6,4.3,steel)
+            prism("RailConductor",side*.58,.4,-3.5,.06,.2,3.8,accent,Enum.Material.Neon)
+            for i=1,7 do
+                prism("CoolingFin",side*.68,.4,-1.65-i*.4,.28,.72,.10,dark)
+                prism("ReceiverBolt",side*.65,.58,-.4-i*.19,.07,.1,.1,chrome)
+            end
+        end
+        for i=1,5 do tube("InductionRing",0,.38,-2-i*.64,.93,.12,steel) end
+        prism("ScopeBase",0,1.14,-.35,.4,.35,1.15,chrome)
+        tube("LongScope",0,1.46,-.45,.59,2.0,dark)
+        tube("ScopeGlass",0,1.46,-1.5,.62,.08,accent,Enum.Material.Neon)
+        tube("ReaperMuzzle",0,.38,-6.07,.67,.32,dark)
+        tube("ReaperMuzzleRing",0,.38,-6.26,.71,.07,accent,Enum.Material.Neon)
+        muzzleZ=-6.34
+    elseif weaponName=="IonStriker" then
+        -- Twin energy rails with exposed coils, segmented foregrip, optic and side canisters.
+        prism("IonChamber",0,.38,-1.0,1.08,.95,2.0,steel)
+        prism("IonStock",0,.22,1.6,.73,.66,1.6,dark)
+        prism("StockVent",0,.5,1.9,.57,.12,.83,chrome)
+        tube("IonBarrel",0,.35,-2.9,.30,3.45,chrome)
+        for side=-1,1,2 do
+            prism("IonRail",side*.43,.44,-2.4,.16,.45,2.7,dark)
+            prism("IonStrip",side*.53,.44,-2.4,.05,.14,2.4,accent,Enum.Material.Neon)
+            tube("EnergyCanister",side*.68,.32,-.58,.35,1.25,accent)
+            for i=1,6 do
+                prism("GripSegment",side*.37,-.15,-1.4-i*.25,.2,.48,.12,dark)
+                prism("VentLouvre",side*.59,.72,-.4-i*.16,.16,.12,.06,chrome)
+            end
+        end
+        for i=1,4 do tube("IonCoil",0,.35,-2.0-i*.48,.66,.15,steel) end
+        prism("ReflexBase",0,1.0,-.15,.36,.27,.67,dark)
+        prism("ReflexFrame",0,1.27,-.35,.57,.40,.11,steel)
+        prism("ReflexGlass",0,1.27,-.42,.40,.26,.025,accent)
+        tube("IonBrake",0,.35,-4.6,.58,.45,dark)
+        tube("IonAperture",0,.35,-4.85,.48,.06,accent,Enum.Material.Neon)
+        muzzleZ=-4.93
     end
     local muzzle=grip:FindFirstChild("FN_Muzzle")
     if not muzzle then muzzle=Instance.new("Attachment");muzzle.Name="FN_Muzzle";muzzle.Parent=grip end
@@ -366,10 +411,12 @@ local function finishWeapon(tool, weaponName)
             visual:Destroy()
         end
     end
-    tool:SetAttribute("FN_ModelV",4)
+    tool:SetAttribute("FN_ModelV",5)
     return tool
 end
 local function ensureWeapon(player, weaponName)
+    local s=sessions[player]
+    if not s or not Combat.canUse(Config,s.PremiumWeapons,weaponName) then return nil end
     local function scan(container)
         if not container then return nil end
         for _,object in ipairs(container:GetChildren()) do
@@ -381,7 +428,7 @@ local function ensureWeapon(player, weaponName)
     end
     local existing=scan(player.Character) or scan(player:FindFirstChildOfClass("Backpack"))
     if existing then
-        if existing:GetAttribute("FN_ModelV")~=4 then finishWeapon(existing,weaponName) end
+        if existing:GetAttribute("FN_ModelV")~=5 then finishWeapon(existing,weaponName) end
         return existing
     end
     local template=StarterPack:FindFirstChild(Config.Weapons[weaponName].Display)
@@ -393,6 +440,7 @@ end
 -- Upgrade StarterPack before its templates are cloned at spawn; server also repairs old copies.
 for _, weaponName in ipairs(Config.WeaponOrder) do
     local desc=Config.Weapons[weaponName]
+    if desc.PassKey then continue end
     local tool=StarterPack:FindFirstChild(desc.Display)
     if not tool or not tool:IsA("Tool") then
         tool=Instance.new("Tool"); tool.Name=desc.Display;tool.Parent=StarterPack
@@ -570,9 +618,15 @@ local function load(player)
         data = defaultData(), persistReady = false,
         owner = HttpService:GenerateGUID(false), leaseUntil = 0, closed = false,
         pendingCoins = 0, pendingXP=0, pendingKOs = 0, pendingDeaths = 0, pendingUnlocks = {},
-        VIP = false, DoubleCoins = false, Crowns = {}, busy = false, streak = 0,
+        VIP = false, DoubleCoins = false, Crowns = {}, PremiumWeapons = {}, busy = false, streak = 0,
         ammo = {}, reloading = {}, lastFire = {}, stamina=100, sprintRequested=false,
     }
+    local studioPreview=Config.StudioPremiumPreview and RunService:IsStudio()
+    if studioPreview then
+        for _,name in ipairs(Config.WeaponOrder) do
+            if Config.Weapons[name].PassKey then s.PremiumWeapons[name]=true end
+        end
+    end
     sessions[player] = s
     player.CharacterAdded:Connect(function(char)
         task.spawn(handleSpawn, player, char)
@@ -630,6 +684,13 @@ local function load(player)
     end
     s.VIP = owns(Config.Passes.VIP)
     s.DoubleCoins = owns(Config.Passes.DoubleCoins)
+    for _,name in ipairs(Config.WeaponOrder) do
+        local spec=Config.Weapons[name]
+        if spec.PassKey then
+            s.PremiumWeapons[name]=studioPreview or owns(Config.Passes[spec.PassKey])
+            if s.PremiumWeapons[name] and player.Character then giveTool(player,name) end
+        end
+    end
     for _,crown in ipairs(Config.Crowns) do s.Crowns[crown.Id]=owns(crown.PassId) end
     if s.data.Equipped == "Prismatic" and not s.VIP then s.data.Equipped = "Mint" end
     stats(player, s)
@@ -648,7 +709,7 @@ local function handleShot(player, direction)
     local tool = char:FindFirstChildOfClass("Tool")
     local name = weaponOfTool(tool)
     local w = name and Config.Weapons[name]
-    if not w or typeof(direction) ~= "Vector3" then return end
+    if not w or not Combat.canUse(Config,s.PremiumWeapons,name) or typeof(direction) ~= "Vector3" then return end
     if direction.X ~= direction.X or direction.Y ~= direction.Y or direction.Z ~= direction.Z then return end
     -- Direction parameter is a world-space point selected by a client camera ray.
     -- It is NEVER treated as an authoritative hit: the server raycasts every pellet.
@@ -659,7 +720,7 @@ local function handleShot(player, direction)
     s.lastFire[name] = now
     if not s.firstShotLogged then
         s.firstShotLogged=true
-        print("[FART-NIGHT v1.2] Server accepted first shot for",player.Name,"with",name)
+        print("[FART-NIGHT v5] Server accepted first shot for",player.Name,"with",name)
     end
     s.ammo[name] -= 1
     local ff = char:FindFirstChild("FN_SpawnShield")
@@ -675,13 +736,16 @@ local function handleShot(player, direction)
     params.FilterType = Enum.RaycastFilterType.Exclude
     params.FilterDescendantsInstances = {char}
     params.IgnoreWater = true
+    local aimFrame=CFrame.lookAt(muzzle,direction)
+    local impacts={}
     local endPos = muzzle + shotDirection * w.Range
     local first = true
     local didHit, wasHeadshot = false, false
     for pellet = 1, w.Pellets do
-        local dir = (shotDirection + Vector3.new(rng:NextNumber(-w.Spread, w.Spread), rng:NextNumber(-w.Spread, w.Spread), rng:NextNumber(-w.Spread, w.Spread))).Unit
+        local dir = Combat.pelletDirection(shotDirection,aimFrame.RightVector,aimFrame.UpVector,pellet,w.Spread,rng)
         local ray = workspace:Raycast(muzzle, dir * w.Range, params)
         local impact = ray and ray.Position or (muzzle + dir * w.Range)
+        table.insert(impacts,impact)
         if first then endPos = impact; first = false end
         if ray then
             local hitModel = ray.Instance:FindFirstAncestorOfClass("Model")
@@ -693,11 +757,9 @@ local function handleShot(player, direction)
                         hitHum:SetAttribute("FN_LastHit", player.UserId)
                         hitHum:SetAttribute("FN_LastHitAt", os.clock())
                         local isHead = ray.Instance.Name == "Head"
-                        local dmg = math.floor(w.Damage * (isHead and 1.4 or 1))
                         local shield = hitHum:GetAttribute("FN_Shield") or 0
-                        local absorb = math.min(shield, dmg)
-                        if absorb > 0 then hitHum:SetAttribute("FN_Shield", shield - absorb) end
-                        local hpDamage = dmg - absorb
+                        local hpDamage,remainingShield=Combat.damage(w,isHead,shield)
+                        if remainingShield~=shield then hitHum:SetAttribute("FN_Shield",remainingShield) end
                         if hpDamage > 0 then hitHum:TakeDamage(hpDamage) end
                         didHit = true
                         wasHeadshot = wasHeadshot or isHead
@@ -715,7 +777,7 @@ local function handleShot(player, direction)
         end
     end
     if didHit then HitConfirm:FireClient(player,wasHeadshot) end
-    FX:FireAllClients("Shot", muzzle, endPos, name, player.UserId)
+    FX:FireAllClients("Shot", muzzle, endPos, name, player.UserId, impacts)
     if tip then
         local emitter=tip:FindFirstChild("FN_Flash")
         if emitter then emitter:Emit(9) end
@@ -728,7 +790,7 @@ SelectWeapon.OnServerEvent:Connect(function(player, weaponName)
     local char=player.Character
     local hum=char and char:FindFirstChildOfClass("Humanoid")
     local s=sessions[player]
-    if not s or not hum or hum.Health<=0 then return end
+    if not s or not hum or hum.Health<=0 or not Combat.canUse(Config,s.PremiumWeapons,weaponName) then return end
     if os.clock()-(s.lastSelect or -10)<.15 then return end
     s.lastSelect=os.clock()
     local tool=giveTool(player,weaponName)
@@ -743,7 +805,7 @@ Reload.OnServerEvent:Connect(function(player)
     local tool = char and char:FindFirstChildOfClass("Tool")
     local name = weaponOfTool(tool)
     local w = name and Config.Weapons[name]
-    if not s or not w or s.reloading[name] or s.ammo[name] == w.Magazine then return end
+    if not s or not w or not Combat.canUse(Config,s.PremiumWeapons,name) or s.reloading[name] or s.ammo[name] == w.Magazine then return end
     s.reloading[name] = os.clock() + w.Reload
     sync(player)
     task.delay(w.Reload, function()
@@ -805,7 +867,12 @@ MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passI
     for _,crown in ipairs(Config.Crowns) do
         if crown.PassId>0 and crown.PassId==passId then purchasedCrown=crown;break end
     end
-    if passId ~= Config.Passes.VIP and passId ~= Config.Passes.DoubleCoins and not purchasedCrown then return end
+    local purchasedWeapon
+    for _,name in ipairs(Config.WeaponOrder) do
+        local spec=Config.Weapons[name]
+        if spec.PassKey and Config.Passes[spec.PassKey]==passId then purchasedWeapon=name;break end
+    end
+    if passId ~= Config.Passes.VIP and passId ~= Config.Passes.DoubleCoins and not purchasedCrown and not purchasedWeapon then return end
     -- The server event is authoritative; confirm entitlement before applying perks.
     local ok, owned = pcall(function()
         return MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
@@ -817,6 +884,12 @@ MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passI
     if purchasedCrown then
         s.Crowns[purchasedCrown.Id]=true
         s.data.EquippedCrown=purchasedCrown.Id
+    end
+    if purchasedWeapon then
+        s.PremiumWeapons[purchasedWeapon]=true
+        local tool=player.Character and giveTool(player,purchasedWeapon)
+        local hum=player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if tool and hum and hum.Health>0 then hum:EquipTool(tool) end
     end
     applyCosmetic(player)
     sync(player)
@@ -1042,4 +1115,4 @@ game:BindToClose(function()
     local deadline = os.clock() + 25
     while pending > 0 and os.clock() < deadline do task.wait(.1) end
 end)
-print("[FART-NIGHT v2] Endless FFA active | server-validated hits, headshots, sliding, collectible cosmetics.")
+print("[FART-NIGHT v5] Endless FFA active | server-validated hits, headshots, sliding, collectible cosmetics.")
