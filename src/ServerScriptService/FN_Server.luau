@@ -715,7 +715,7 @@ local function handleShot(player, direction)
         end
     end
     if didHit then HitConfirm:FireClient(player,wasHeadshot) end
-    FX:FireAllClients("Shot", muzzle, endPos, name)
+    FX:FireAllClients("Shot", muzzle, endPos, name, player.UserId)
     if tip then
         local emitter=tip:FindFirstChild("FN_Flash")
         if emitter then emitter:Emit(9) end

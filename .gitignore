@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 tests/.server.generated.luau
 tests/.catalog.generated.luau
+tests/.audio.generated.luau

@@ -1,6 +1,6 @@
 # FartNight: Neon City Arena
 
-Version 3.2 — balanced neon accents, an original soundtrack, and finalized launch pricing.
+Version 3.3 — gun/footstep effects, balanced neon accents, original soundtrack, and launch pricing.
 
 Competitive sci-fi free-for-all built from the supplied Roblox Studio place.
 Open **FartNight.rbxlx** in Roblox Studio. The unchanged upload is retained in
@@ -32,6 +32,7 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 /workspace/roblox-tools/luau/build/luau tests/economy.luau
 python3 tests/run_server_tests.py
 python3 tests/run_catalog_tests.py
+python3 tests/run_audio_tests.py
 python3 /workspace/roblox-tools/check_place.py FartNight.rbxlx
 ```
 
@@ -125,3 +126,31 @@ numeric asset ID in `Config.Music.SoundId`. Rebuild and publish the place afterw
 The ID is currently zero, so music shows Coming Soon until that is done. Audio
 playback, music/combat balance and the revised neon appearance still require a
 Studio/private-server playtest; offline checks cannot judge the final game mix.
+
+## Gunfire and movement audio
+
+Gunfire, reload-start feedback and confirmed-hit feedback now have audio. Gunfire
+uses distinct pitch/EQ/distortion profiles per weapon. The shooter hears a local
+predicted shot immediately; the server includes its player ID in broadcast FX so
+the same client does not play it twice. Other players hear positional shots, with
+distance culling and a 24-voice cap. Footstep loops start only while grounded and
+moving, change cadence for sprinting, and clean up on respawn. Default Running
+sounds are suppressed while the custom loop is active to avoid double footsteps.
+Armory → Settings → Mute Sound Effects controls this effect group independently.
+
+These effects use processed engine-bundled character/percussion sounds as
+fallbacks; no separate audio upload is needed for them. They are not bespoke
+recorded gun samples. Their paths are documented in Roblox's Core-Scripts:
+https://github.com/Roblox/Core-Scripts/blob/425d2d641bdc4b6c1104a9d5f6c53c9ea758c5cb/PlayerScripts/StarterCharacterScripts/Sound.server.lua
+Config.Audio exposes the IDs, pitches and volumes for future custom samples.
+
+**Music remains a separate upload requirement.** The original music is in
+`assets/music/NeonCircuit.mp3` in this repository/ZIP. Local files cannot be used
+as SoundId values in a published Roblox place. Upload that MP3 through Creator
+Hub Audio, grant the experience access, and supply the numeric asset ID so it can
+be connected to Config.Music.SoundId. It is still zero; do not expect music yet.
+
+Simulated-service tests cover effect triggering, voice culling/cleanup and
+footstep movement/airborne/respawn behavior. Verify actual asset playback and
+mixing in Studio, with Roblox Settings volume above zero, plus two clients for
+remote footsteps/shots. Audio playback has not been tested in the Roblox engine.

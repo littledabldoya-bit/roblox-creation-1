@@ -3,7 +3,7 @@
 local Config = {}
 
 Config.GameName = "FART-NIGHT"
-Config.Version = "3.2.0"
+Config.Version = "3.3.0"
 Config.ArenaRadius = 255
 Config.RespawnSeconds = 3
 Config.CoinPickupValue = 5
@@ -61,6 +61,19 @@ Config.LaunchPrices = {
 -- Upload assets/music/NeonCircuit.mp3 under the experience owner, grant the
 -- experience permission to use it, and put the resulting audio asset ID here.
 Config.Music = {SoundId = 0, Volume = 0.22}
+-- Built-in Roblox character audio used as processed percussion fallbacks.
+-- Replace SoundId strings with uploaded custom assets later if desired.
+Config.Audio = {
+    Volume = 0.75,
+    Footsteps = "rbxasset://sounds/action_footsteps_plastic.mp3",
+    Reload = "rbxasset://sounds/action_get_up.mp3",
+    Hit = "rbxasset://sounds/action_jump_land.mp3",
+    Weapons = {
+        BeanBlaster = {SoundId = "rbxasset://sounds/action_jump_land.mp3", Speed = 1.8, Volume = .6},
+        BurpCannon = {SoundId = "rbxasset://sounds/action_jump_land.mp3", Speed = .65, Volume = .8},
+        ToxicTagger = {SoundId = "rbxasset://sounds/action_jump_land.mp3", Speed = 2.5, Volume = .7},
+    },
+}
 
 Config.ProductAwards = {Coin250 = 250, Coin1200 = 1200, Coin4000 = 4000}
 return Config

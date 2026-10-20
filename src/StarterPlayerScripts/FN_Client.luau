@@ -41,6 +41,114 @@ gui.ResetOnSpawn = false
 gui.DisplayOrder = 4
 gui.Parent = player:WaitForChild("PlayerGui")
 
+-- Engine-bundled effects work without uploading separate Roblox audio assets.
+local SoundService=game:GetService("SoundService")
+local sfxGroup=Instance.new("SoundGroup")
+sfxGroup.Name="FN_Effects";sfxGroup.Volume=Config.Audio.Volume;sfxGroup.Parent=SoundService
+local voiceCount=0
+local function effect(id,parent,volume,speed)
+    local sound=Instance.new("Sound")
+    sound.Name="FN_Effect";sound.SoundId=id;sound.SoundGroup=sfxGroup
+    sound.Volume=volume;sound.PlaybackSpeed=speed or 1
+    sound.RollOffMinDistance=8;sound.RollOffMaxDistance=140
+    sound.RollOffMode=Enum.RollOffMode.InverseTapered;sound.Parent=parent
+    return sound
+end
+local function shotSound(weapon,position)
+    local definition=Config.Audio.Weapons[weapon]
+    local camera=workspace.CurrentCamera
+    if not definition or typeof(position)~="Vector3" or voiceCount>=24 then return end
+    if camera and (camera.CFrame.Position-position).Magnitude>140 then return end
+    local anchor=Instance.new("Part")
+    anchor.Name="FN_ShotAudio";anchor.Size=Vector3.new(.1,.1,.1);anchor.Position=position
+    anchor.Transparency=1;anchor.Anchored=true;anchor.CanCollide=false;anchor.CanTouch=false;anchor.CanQuery=false
+    anchor.Parent=workspace
+    local sound=effect(definition.SoundId,anchor,definition.Volume,definition.Speed)
+    local eq=Instance.new("EqualizerSoundEffect")
+    eq.LowGain=weapon=="BurpCannon" and 5 or -2;eq.MidGain=2;eq.HighGain=weapon=="ToxicTagger" and 4 or 0;eq.Parent=sound
+    local distortion=Instance.new("DistortionSoundEffect")
+    distortion.Level=.12;distortion.Parent=sound
+    voiceCount+=1
+    anchor.Destroying:Connect(function() voiceCount=math.max(0,voiceCount-1) end)
+    sound.Ended:Connect(function() anchor:Destroy() end)
+    sound:Play();Debris:AddItem(anchor,2.5)
+end
+local function uiEffect(id,speed,volume)
+    local sound=effect(id,SoundService,volume,speed)
+    sound.Ended:Connect(function() sound:Destroy() end)
+    sound:Play();Debris:AddItem(sound,2)
+end
+
+local footsteps={}
+local playerAudioConnections={}
+local function stopFootsteps(character)
+    local state=footsteps[character]
+    if not state then return end
+    footsteps[character]=nil
+    for _,connection in ipairs(state.Connections) do connection:Disconnect() end
+    for original,volume in pairs(state.Originals) do if original.Parent then original.Volume=volume end end
+    state.Sound:Destroy()
+end
+local function characterAudio(character)
+    local humanoid=character:WaitForChild("Humanoid",8)
+    local root=character:WaitForChild("HumanoidRootPart",8)
+    if not humanoid or not root or not character.Parent or footsteps[character] then return end
+    local sound=effect(Config.Audio.Footsteps,root,.32,1.6)
+    sound.Name="FN_Footsteps";sound.Looped=true;sound.RollOffMaxDistance=65
+    local state={Sound=sound,Connections={},Originals={}}
+    footsteps[character]=state
+    local function muteDefault(object)
+        if object:IsA("Sound") and object.Name=="Running" and not state.Originals[object] then
+            state.Originals[object]=object.Volume
+            object.Volume=0
+            table.insert(state.Connections,object:GetPropertyChangedSignal("Volume"):Connect(function()
+                if object.Volume~=0 then object.Volume=0 end
+            end))
+        end
+    end
+    for _,object in ipairs(character:GetDescendants()) do muteDefault(object) end
+    table.insert(state.Connections,character.DescendantAdded:Connect(muteDefault))
+    table.insert(state.Connections,character.AncestryChanged:Connect(function()
+        if not character.Parent then stopFootsteps(character) end
+    end))
+    table.insert(state.Connections,RunService.Heartbeat:Connect(function()
+        if not root.Parent then stopFootsteps(character);return end
+        local velocity=root.AssemblyLinearVelocity
+        local speed=Vector3.new(velocity.X,0,velocity.Z).Magnitude
+        local camera=workspace.CurrentCamera
+        local near=camera and (camera.CFrame.Position-root.Position).Magnitude<70
+        local moving=humanoid.Health>0 and not humanoid.Sit and humanoid.FloorMaterial~=Enum.Material.Air and speed>1.5 and near
+        if moving then
+            sound.PlaybackSpeed=math.clamp(speed/16*1.6,.8,2.5)
+            sound.Volume=math.clamp(speed/16*.32,.14,.42)
+            if not sound.IsPlaying then sound:Play() end
+        elseif sound.IsPlaying then sound:Stop() end
+    end))
+end
+local function watchPlayerAudio(who)
+    if playerAudioConnections[who] then return end
+    playerAudioConnections[who]={
+        who.CharacterAdded:Connect(function(character) task.spawn(characterAudio,character) end),
+        who.CharacterRemoving:Connect(stopFootsteps),
+    }
+    if who.Character then task.spawn(characterAudio,who.Character) end
+end
+local audioAdded=Players.PlayerAdded:Connect(watchPlayerAudio)
+local audioRemoved=Players.PlayerRemoving:Connect(function(who)
+    if who.Character then stopFootsteps(who.Character) end
+    for _,connection in ipairs(playerAudioConnections[who] or {}) do connection:Disconnect() end
+    playerAudioConnections[who]=nil
+end)
+for _,who in ipairs(Players:GetPlayers()) do watchPlayerAudio(who) end
+gui.Destroying:Connect(function()
+    audioAdded:Disconnect();audioRemoved:Disconnect()
+    for _,connections in pairs(playerAudioConnections) do for _,connection in ipairs(connections) do connection:Disconnect() end end
+    local characters={}
+    for character in pairs(footsteps) do table.insert(characters,character) end
+    for _,character in ipairs(characters) do stopFootsteps(character) end
+    sfxGroup:Destroy()
+end)
+
 -- Competitive arena visual system: readable information, generous targets, no external assets.
 local C = {Panel=Color3.fromRGB(12,20,34), Card=Color3.fromRGB(22,34,52), Cyan=Color3.fromRGB(76,224,255),
     Muted=Color3.fromRGB(151,172,196), Gold=Color3.fromRGB(255,209,104), White=Color3.fromRGB(237,246,255)}
@@ -111,6 +219,7 @@ local hitmarker=lbl("HitMarker",gui,"×",UDim2.new(.5,-23,.5,-24),UDim2.fromOffs
 hitmarker.TextXAlignment=Enum.TextXAlignment.Center;hitmarker.TextTransparency=1
 local confirmCounter=0
 HitConfirm.OnClientEvent:Connect(function(headshot)
+    uiEffect(Config.Audio.Hit,headshot and 2.8 or 2.2,.16)
     confirmCounter+=1;local mine=confirmCounter
     hitmarker.Text=headshot and "✦" or "×";hitmarker.TextColor3=headshot and C.Gold or C.White;hitmarker.TextTransparency=0
     task.delay(.18,function() if mine==confirmCounter then hitmarker.TextTransparency=1 end end)
@@ -235,7 +344,6 @@ for i,crown in ipairs(Config.Crowns) do
     robuxOffer(crown.Id,crown.Name,"Pass",crown.PassId,"Permanent wearable crown · cosmetic only · no combat boost",i,crown)
 end
 -- A client-owned Sound survives character respawns and has independent mute/ducking.
-local SoundService=game:GetService("SoundService")
 local musicId=Config.Music and Config.Music.SoundId or 0
 local musicConfigured=type(musicId)=="number" and musicId>0
 local musicMuted=false
@@ -292,6 +400,10 @@ local function setting(key,title,description,attribute,order)
 end
 setting("Motion","REDUCED CAMERA MOTION","Disable camera recoil. Applies for this session.","FN_ReducedMotion",1)
 setting("Effects","REDUCED EFFECTS","Fewer impact particles. Applies for this session.","FN_LowFX",2)
+setting("SoundEffects","MUTE SOUND EFFECTS","Mute weapons, reloads, hit markers and footsteps.","FN_MuteSFX",4)
+player:GetAttributeChangedSignal("FN_MuteSFX"):Connect(function()
+    sfxGroup.Volume=player:GetAttribute("FN_MuteSFX") and 0 or Config.Audio.Volume
+end)
 local function selectTab(key)
     activeTab=key
     for _,card in ipairs(cards) do card.Frame.Visible=card.Category==key end
@@ -451,6 +563,8 @@ local function fireOnce()
     local aim=hit and hit.Position or (ray.Origin+ray.Direction*w.Range)
     lastLocalShot=now
     player:SetAttribute("FN_ShotAt",now)
+    local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if root then shotSound(name,root.Position) end
     Shoot:FireServer(aim)
     if not firstShotSent then
         firstShotSent=true
@@ -639,8 +753,15 @@ local function refresh()
         b.BackgroundColor3=owned and skin.Color or Color3.fromRGB(132,138,156)
     end
 end
+local lastReloads={}
 Sync.OnClientEvent:Connect(function(newData)
     if type(newData)~="table" then return end
+    if type(newData.Reloads)=="table" then
+        for name,reloading in pairs(newData.Reloads) do
+            if reloading and not lastReloads[name] then uiEffect(Config.Audio.Reload,1.7,.22) end
+        end
+        lastReloads=table.clone(newData.Reloads)
+    end
     for key,value in pairs(newData) do data[key]=value end
     refresh()
 end)
@@ -664,8 +785,9 @@ local function burst(pos,color,count)
     p.Parent=anchor;p:Emit(player:GetAttribute("FN_LowFX") and math.min(count or 9,3) or (count or 9))
     Debris:AddItem(anchor,1.4)
 end
-FX.OnClientEvent:Connect(function(kind,a,b,c)
+FX.OnClientEvent:Connect(function(kind,a,b,c,shooterId)
     if kind=="Shot" and typeof(a)=="Vector3" and typeof(b)=="Vector3" then
+        if shooterId~=player.UserId then shotSound(c,a) end
         local w=Config.Weapons[c]
         local col=w and w.Color or Color3.new(1,1,1)
         local delta=b-a
