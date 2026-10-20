@@ -26,7 +26,21 @@ class PlaceTests(unittest.TestCase):
         cls.original = ET.parse(ROOT / 'assets/FartNight.original.rbxlx').getroot()
 
     def test_arena_and_original_non_script_properties_are_preserved(self):
-        self.assertEqual(canonical(self.original), canonical(self.current))
+        expected = ET.fromstring(builder.soften_visuals(ET.tostring(self.original, encoding="unicode")))
+        self.assertEqual(canonical(expected), canonical(self.current))
+
+    def test_only_thin_accent_parts_retain_neon_material(self):
+        retained = 0
+        for item in self.current.iter('Item'):
+            if item.get('class') not in {'Part', 'SpawnLocation'}:
+                continue
+            material = item.find("./Properties/token[@name='Material']")
+            if material is not None and material.text == '288':
+                name = item.find("./Properties/string[@name='Name']").text
+                self.assertIn(name, builder.ACCENT_NAMES)
+                retained += 1
+        self.assertGreater(retained, 0)
+        self.assertLess(retained, 100)
 
     def test_every_embedded_source_matches_editable_source(self):
         items = {node.find("./Properties/string[@name='Name']").text: node

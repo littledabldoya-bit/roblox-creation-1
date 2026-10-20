@@ -13,6 +13,7 @@ prefix = server.split('-- Coins are continuous,')[0]
 harness = r'''
 local Economy=require('../src/ReplicatedStorage/FN_Economy')
 local config={Cosmetics={{Id='Mint',Name='Mint',Cost=0}},WeaponOrder={},Products={Coin250=101},ProductAwards={Coin250=250},Passes={VIP=0,DoubleCoins=0},RespawnSeconds=3}
+config.Crowns={{Id="Vanguard",PassId=201},{Id="Sovereign",PassId=202},{Id="Eclipse",PassId=203}}
 local record=nil
 local fail=false
 local loseResponse=false
@@ -29,9 +30,20 @@ function store:UpdateAsync(key,callback)
     return proposed
 end
 local player={UserId=42,Name='TestOperator',Parent=true,FindFirstChild=function() return nil end}
-local market={PromptGamePassPurchaseFinished={Connect=function() end}}
+local passFinished
+local ownsPass=false
+local market={PromptGamePassPurchaseFinished={Connect=function(_,callback) passFinished=callback end},
+    UserOwnsGamePassAsync=function() return ownsPass end}
 local event={OnServerEvent={Connect=function() end},FireClient=function() end}
-local remotes={WaitForChild=function() return event end}
+local remoteEvents={}
+local remotes={WaitForChild=function(_,name)
+    if not remoteEvents[name] then
+        local signal={FireClient=function() end}
+        signal.OnServerEvent={Connect=function(_,callback) signal.Callback=callback end}
+        remoteEvents[name]=signal
+    end
+    return remoteEvents[name]
+end}
 local replicated={WaitForChild=function(_,name) if name=='FN_Remotes' then return remotes end return name end}
 local services={Players={GetPlayerByUserId=function(_,id) return id==42 and player or nil end},
     ReplicatedStorage=replicated,DataStoreService={GetDataStore=function() return store end},MarketplaceService=market}
@@ -49,8 +61,8 @@ local state
 local function reset()
     record=Economy.normalize(nil,{Mint=true});record.Session={Owner='owner-A',Expires=os.time()+180}
     state={data=Economy.normalize(record,{Mint=true}),owner='owner-A',persistReady=true,leaseUntil=os.time()+180,
-        pendingCoins=0,pendingXP=0,pendingKOs=0,pendingDeaths=0,pendingUnlocks={},ammo={},reloading={},busy=false,streak=0}
-    api.sessions[player]=state;fail=false;loseResponse=false;calls=0;duringUpdate=nil
+        Crowns={},pendingCoins=0,pendingXP=0,pendingKOs=0,pendingDeaths=0,pendingUnlocks={},ammo={},reloading={},busy=false,streak=0}
+    api.sessions[player]=state;ownsPass=false;fail=false;loseResponse=false;calls=0;duringUpdate=nil
 end
 local passed=0
 local function test(name,fn)
@@ -131,6 +143,34 @@ test('closing saves release the session and cannot save twice'  ,function()
     state.pendingCoins=10;state.data.Coins=10
     assert(api.save(player,true) and not record.Session and state.closed and record.Coins==10)
     local before=calls;assert(api.save(player,true) and calls==before)
+end)
+test('unowned or forged crown equip requests are rejected',function()
+    remoteEvents.Shop.Callback(player,'EquipCrown','Vanguard')
+    assert(state.data.EquippedCrown=='None')
+    state.lastShopRequest=-10;state.Crowns.Fake=true
+    remoteEvents.Shop.Callback(player,'EquipCrown','Fake')
+    assert(state.data.EquippedCrown=='None')
+end)
+test('owned crowns can be worn, persisted, and removed',function()
+    state.Crowns.Vanguard=true
+    remoteEvents.Shop.Callback(player,'EquipCrown','Vanguard')
+    assert(state.data.EquippedCrown=='Vanguard')
+    assert(api.save(player) and record.EquippedCrown=='Vanguard')
+    state.lastShopRequest=-10
+    remoteEvents.Shop.Callback(player,'EquipCrown','None')
+    assert(state.data.EquippedCrown=='None')
+    assert(api.save(player) and record.EquippedCrown=='None')
+end)
+test('crown purchase requires server ownership confirmation and auto equips',function()
+    passFinished(player,201,false);assert(not state.Crowns.Vanguard)
+    passFinished(player,201,true);assert(not state.Crowns.Vanguard)
+    ownsPass=true;passFinished(player,201,true)
+    assert(state.Crowns.Vanguard and state.data.EquippedCrown=='Vanguard')
+    assert(api.save(player) and record.EquippedCrown=='Vanguard')
+end)
+test('unknown pass cannot grant a crown',function()
+    ownsPass=true;passFinished(player,999,true)
+    assert(not state.Crowns.Vanguard and state.data.EquippedCrown=='None')
 end)
 print(tostring(passed)..' server persistence tests passed (simulated services)')
 '''

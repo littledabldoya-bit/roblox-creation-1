@@ -27,7 +27,7 @@ local SelectWeapon = Remotes:WaitForChild("SelectWeapon")
 local HitConfirm = Remotes:WaitForChild("HitConfirm")
 local Slide = Remotes:WaitForChild("Slide")
 
-local data = {Coins = 0, XP = 0, Level = 1, KOs = 0, Deaths = 0, Unlocks = {Mint=true}, Equipped = "Mint", VIP=false, DoubleCoins=false, Ready=false, Ammo={}, Reloads={}}
+local data = {Coins = 0, XP = 0, Level = 1, KOs = 0, Deaths = 0, Unlocks = {Mint=true}, Equipped = "Mint", VIP=false, DoubleCoins=false, Crowns={}, EquippedCrown="None", Ready=false, Ammo={}, Reloads={}}
 local equipped, firing, lastLocalShot = nil, false, -1000
 local lastNoGunToast = -1000
 local firstShotSent = false
@@ -147,8 +147,8 @@ shopStatus.TextWrapped=true
 local closeButton=btn("Close",shopPanel,"×",UDim2.new(1,-58,0,16),UDim2.fromOffset(40,40),C.Card)
 closeButton.TextColor3=C.White;closeButton.TextSize=24
 local tabs={};local activeTab="Skins"
-for i,key in ipairs({"Skins","Passes","Coins","Settings"}) do
-    local b=btn(key,shopPanel,string.upper(key),UDim2.new((i-1)/4,10,0,114),UDim2.new(1/4,-14,0,38),C.Card)
+for i,key in ipairs({"Skins","Crowns","Passes","Coins","Settings"}) do
+    local b=btn(key,shopPanel,string.upper(key),UDim2.new((i-1)/5,8,0,114),UDim2.new(1/5,-12,0,38),C.Card)
     b.TextColor3=C.White;b.TextSize=11;tabs[key]=b
 end
 local shopScroll=el("ScrollingFrame","Offers",shopPanel,{Position=UDim2.fromOffset(16,166),Size=UDim2.new(1,-32,1,-216),BackgroundTransparency=1,ScrollBarThickness=4,ScrollBarImageColor3=C.Cyan,BorderSizePixel=0,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y})
@@ -183,20 +183,20 @@ end
 local pendingPurchase=nil
 local function refreshPaid()
     for _,entry in ipairs(paidOffers) do
-        local owned=entry.Key=="VIP" and data.VIP or entry.Key=="DoubleCoins" and data.DoubleCoins
-        local enabled=entry.Id>0 and entry.Available and data.Ready and not owned and not pendingPurchase
+        local owned=entry.CrownId and data.Crowns[entry.CrownId] or entry.Key=="VIP" and data.VIP or entry.Key=="DoubleCoins" and data.DoubleCoins
+        local enabled=data.Ready and not pendingPurchase and ((owned and entry.CrownId~=nil) or (entry.Id>0 and entry.Available and not owned))
         entry.Button.Active=enabled;entry.Button.Selectable=enabled
         entry.Button.BackgroundColor3=enabled and C.Gold or C.Card
         entry.Button.TextColor3=enabled and C.Panel or C.Muted
-        entry.Button.Text=owned and "OWNED" or entry.Id<=0 and "COMING SOON" or pendingPurchase and "PLEASE WAIT" or not data.Ready and "CONNECTING" or not entry.Available and "UNAVAILABLE" or entry.Price
+        entry.Button.Text=owned and entry.CrownId and (data.EquippedCrown==entry.CrownId and "REMOVE" or "WEAR") or owned and "OWNED" or entry.Id<=0 and "COMING SOON" or pendingPurchase and "PLEASE WAIT" or not data.Ready and "CONNECTING" or not entry.Available and "UNAVAILABLE" or entry.Price
     end
     shopStatus.Text=not data.Ready and "PRACTICE MODE · Saving and purchases are unavailable." or pendingPurchase and "Complete or cancel the Roblox prompt. Coins arrive after confirmation." or "PROGRESS SAVED ONLINE · Purchases are optional. Roblox confirms the final price."
 end
-local function robuxOffer(key,title,kind,id,description,order)
-    local frame=offer(title,description,C.Gold,kind=="Pass" and "Passes" or "Coins",order)
+local function robuxOffer(key,title,kind,id,description,order,crown)
+    local frame=offer(title,description,crown and crown.Color or C.Gold,crown and "Crowns" or kind=="Pass" and "Passes" or "Coins",order)
     local b=btn("Robux",frame,"COMING SOON",UDim2.new(1,-154,1,-40),UDim2.fromOffset(140,32),C.Gold)
     b.TextSize=11
-    local entry={Key=key,Kind=kind,Id=id,Button=b,Available=false,Price="UNAVAILABLE"}
+    local entry={Key=key,Kind=kind,Id=id,CrownId=crown and crown.Id,Button=b,Available=false,Price="UNAVAILABLE"}
     table.insert(paidOffers,entry)
     if id>0 then
         task.spawn(function()
@@ -208,7 +208,12 @@ local function robuxOffer(key,title,kind,id,description,order)
         end)
     end
     b.Activated:Connect(function()
-        if not b.Active or pendingPurchase or not entry.Available or not data.Ready or id<=0 then return end
+        if not b.Active or pendingPurchase or not data.Ready then return end
+        if crown and data.Crowns[crown.Id] then
+            Shop:FireServer("EquipCrown",data.EquippedCrown==crown.Id and "None" or crown.Id)
+            return
+        end
+        if not entry.Available or id<=0 then return end
         if kind=="Pass" and ((key=="VIP" and data.VIP) or (key=="DoubleCoins" and data.DoubleCoins)) then return end
         pendingPurchase=entry;refreshPaid()
         local ok=pcall(function()
@@ -223,6 +228,9 @@ robuxOffer("DoubleCoins","DOUBLE COINS","Pass",Config.Passes.DoubleCoins,"Perman
 robuxOffer("Coin250","250 COINS","Product",Config.Products.Coin250,"Repeatable · 250 coins for cosmetic unlocks",1)
 robuxOffer("Coin1200","1,200 COINS","Product",Config.Products.Coin1200,"Repeatable · 1,200 coins for cosmetic unlocks",2)
 robuxOffer("Coin4000","4,000 COINS","Product",Config.Products.Coin4000,"Repeatable · 4,000 coins for cosmetic unlocks",3)
+for i,crown in ipairs(Config.Crowns) do
+    robuxOffer(crown.Id,crown.Name,"Pass",crown.PassId,"Permanent wearable crown · cosmetic only · no combat boost",i,crown)
+end
 local function setting(key,title,description,attribute,order)
     local frame=offer(title,description,C.Cyan,"Settings",order)
     local b=btn(key,frame,"OFF",UDim2.new(1,-154,1,-40),UDim2.fromOffset(140,32),C.Card)

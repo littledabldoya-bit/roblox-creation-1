@@ -43,7 +43,7 @@ local byCosmetic = {}
 for _, skin in ipairs(Config.Cosmetics) do byCosmetic[skin.Id] = skin end
 
 local function defaultData()
-    return {Coins = 0, XP = 0, KOs = 0, Deaths = 0, Unlocks = {Mint = true}, Equipped = "Mint", Receipts = {}}
+    return {Coins = 0, XP = 0, KOs = 0, Deaths = 0, Unlocks = {Mint = true}, Equipped = "Mint", EquippedCrown = "None", Receipts = {}}
 end
 local function normalized(value)
     return Economy.normalize(value, byCosmetic)
@@ -54,6 +54,7 @@ local function sync(player)
     Sync:FireClient(player, {
         Coins = s.data.Coins, XP = s.data.XP, Level = math.floor(s.data.XP/300)+1, KOs = s.data.KOs, Deaths = s.data.Deaths,
         Unlocks = s.data.Unlocks, Equipped = s.data.Equipped, VIP = s.VIP,
+        Crowns = s.Crowns, EquippedCrown = s.data.EquippedCrown,
         DoubleCoins = s.DoubleCoins, Ready = s.persistReady and os.time() < s.leaseUntil,
         Ammo = s.ammo, Reloads = s.reloading,
     })
@@ -101,7 +102,7 @@ local function save(player, closing)
     if not s.saveAttempt then
         s.saveSequence=(s.saveSequence or 0)+1
         s.saveAttempt={Id=s.owner..":"..s.saveSequence, Closing=closing==true, Coins=s.pendingCoins, XP=s.pendingXP,
-            KOs=s.pendingKOs, Deaths=s.pendingDeaths, Unlocks=table.clone(s.pendingUnlocks), Equipped=s.data.Equipped}
+            KOs=s.pendingKOs, Deaths=s.pendingDeaths, Unlocks=table.clone(s.pendingUnlocks), Equipped=s.data.Equipped, EquippedCrown=s.data.EquippedCrown}
     end
     local attempt=s.saveAttempt
     local deltaCoins,deltaXP,deltaKOs,deltaDeaths=attempt.Coins,attempt.XP,attempt.KOs,attempt.Deaths
@@ -118,6 +119,9 @@ local function save(player, closing)
                 d.Deaths += deltaDeaths
                 for id in pairs(newUnlocks) do d.Unlocks[id] = true end
                 if d.Unlocks[equipped] or (equipped == "Prismatic" and s.VIP) then d.Equipped = equipped end
+                if Economy.canEquipCrown(Config.Crowns, s.Crowns, attempt.EquippedCrown) then
+                    d.EquippedCrown=attempt.EquippedCrown
+                end
                 d.LastSaveId=attempt.Id
             end
             if closing then d.Session = nil else d.Session = {Owner = s.owner, Expires = os.time() + SESSION_SECONDS} end
@@ -400,6 +404,41 @@ local function giveTool(player, weaponName)
     return ensureWeapon(player, weaponName)
 end
 
+-- Cosmetic-only crown geometry, welded to the head without collisions or mass.
+local function applyCrown(player)
+    local s=sessions[player]
+    local char=player.Character
+    local head=char and char:FindFirstChild("Head")
+    if not s or not head then return end
+    local old=char:FindFirstChild("FN_WornCrown")
+    if old then old:Destroy() end
+    local id=s.data.EquippedCrown
+    if id=="None" or not Economy.canEquipCrown(Config.Crowns,s.Crowns,id) then return end
+    local selected
+    for _,crown in ipairs(Config.Crowns) do if crown.Id==id then selected=crown;break end end
+    if not selected then return end
+    local model=Instance.new("Model");model.Name="FN_WornCrown"
+    local radius=math.max(head.Size.X,head.Size.Z)*.48
+    local height=head.Size.Y*.5+.12
+    local function piece(kind,name,size,offset,color)
+        local p=Instance.new(kind);p.Name=name;p.Size=size;p.CFrame=head.CFrame*offset
+        p.Color=color;p.Material=Enum.Material.Metal
+        p.CanCollide=false;p.CanTouch=false;p.CanQuery=false;p.Massless=true;p.CastShadow=false
+        p.Parent=model
+        local weld=Instance.new("WeldConstraint");weld.Part0=head;weld.Part1=p;weld.Parent=p
+    end
+    for i=1,12 do
+        local angle=(i-1)*math.tau/12
+        local offset=CFrame.new(math.cos(angle)*radius,height,math.sin(angle)*radius)*CFrame.Angles(0,-angle,0)
+        piece("Part","Band",Vector3.new(.14,.16,radius*.54),offset,selected.Color)
+        if i%2==0 then
+            piece("WedgePart","Point",Vector3.new(.18,.46,radius*.38),offset*CFrame.new(0,.25,0),selected.Color)
+            piece("Part","Gem",Vector3.new(.16,.16,.16),offset*CFrame.new(.08,.05,0),Color3.fromRGB(193,220,235))
+        end
+    end
+    model.Parent=char
+end
+
 local function applyCosmetic(player)
     local s = sessions[player]
     local char = player.Character
@@ -408,6 +447,7 @@ local function applyCosmetic(player)
     local root = char:FindFirstChild("HumanoidRootPart")
     local head = char:FindFirstChild("Head")
     if not root or not head then return end
+    applyCrown(player)
     local old = root:FindFirstChild("FN_GasAura")
     if old then old:Destroy() end
     local att = Instance.new("Attachment")
@@ -530,7 +570,7 @@ local function load(player)
         data = defaultData(), persistReady = false,
         owner = HttpService:GenerateGUID(false), leaseUntil = 0, closed = false,
         pendingCoins = 0, pendingXP=0, pendingKOs = 0, pendingDeaths = 0, pendingUnlocks = {},
-        VIP = false, DoubleCoins = false, busy = false, streak = 0,
+        VIP = false, DoubleCoins = false, Crowns = {}, busy = false, streak = 0,
         ammo = {}, reloading = {}, lastFire = {}, stamina=100, sprintRequested=false,
     }
     sessions[player] = s
@@ -590,6 +630,7 @@ local function load(player)
     end
     s.VIP = owns(Config.Passes.VIP)
     s.DoubleCoins = owns(Config.Passes.DoubleCoins)
+    for _,crown in ipairs(Config.Crowns) do s.Crowns[crown.Id]=owns(crown.PassId) end
     if s.data.Equipped == "Prismatic" and not s.VIP then s.data.Equipped = "Mint" end
     stats(player, s)
     applyCosmetic(player)
@@ -721,17 +762,25 @@ RequestSync.OnServerEvent:Connect(function(player)
     sync(player)
 end)
 Shop.OnServerEvent:Connect(function(player, action, cosmeticId)
-    if action ~= "Buy" and action ~= "Equip" then return end
+    if action ~= "Buy" and action ~= "Equip" and action ~= "EquipCrown" then return end
     if type(cosmeticId) ~= "string" then return end
     local s = sessions[player]
     local cosmetic = byCosmetic[cosmeticId]
-    if not s or not cosmetic or s.closed then return end
+    if not s or s.closed then return end
     if os.clock() - (s.lastShopRequest or -10) < .3 then return end
     s.lastShopRequest = os.clock()
     if not s.persistReady or os.time() >= s.leaseUntil then
         Notice:FireClient(player, "Your progress is still connecting. Try the shop again shortly.")
         return
     end
+    if action=="EquipCrown" then
+        if not Economy.canEquipCrown(Config.Crowns,s.Crowns,cosmeticId) then return end
+        s.data.EquippedCrown=cosmeticId
+        applyCrown(player);sync(player)
+        Notice:FireClient(player,cosmeticId=="None" and "Crown removed." or "Crown equipped!")
+        return
+    end
+    if not cosmetic then return end
     if cosmetic.Id == "Prismatic" then
         if not s.VIP then return end
     elseif not s.data.Unlocks[cosmetic.Id] then
@@ -752,7 +801,11 @@ end)
 
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
     if not purchased or passId <= 0 then return end
-    if passId ~= Config.Passes.VIP and passId ~= Config.Passes.DoubleCoins then return end
+    local purchasedCrown
+    for _,crown in ipairs(Config.Crowns) do
+        if crown.PassId>0 and crown.PassId==passId then purchasedCrown=crown;break end
+    end
+    if passId ~= Config.Passes.VIP and passId ~= Config.Passes.DoubleCoins and not purchasedCrown then return end
     -- The server event is authoritative; confirm entitlement before applying perks.
     local ok, owned = pcall(function()
         return MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
@@ -761,6 +814,10 @@ MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passI
     if not s or not ok or not owned then return end
     if passId == Config.Passes.VIP then s.VIP = true end
     if passId == Config.Passes.DoubleCoins then s.DoubleCoins = true end
+    if purchasedCrown then
+        s.Crowns[purchasedCrown.Id]=true
+        s.data.EquippedCrown=purchasedCrown.Id
+    end
     applyCosmetic(player)
     sync(player)
     Notice:FireClient(player, "Pass unlocked! Your perks are ready.")

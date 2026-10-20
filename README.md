@@ -1,5 +1,7 @@
 # FartNight: Neon City Arena
 
+Version 3.1 — softer lighting and wearable crowns.
+
 Competitive sci-fi free-for-all built from the supplied Roblox Studio place.
 Open **FartNight.rbxlx** in Roblox Studio. The unchanged upload is retained in
 `assets/FartNight.original.rbxlx`.
@@ -8,12 +10,12 @@ Open **FartNight.rbxlx** in Roblox Studio. The unchanged upload is retained in
 
 - Navy/cyan combat HUD, health and stamina meters, XP progression, low-ammo feedback,
   confirmed hit markers, elimination feed, and a first-spawn briefing.
-- Responsive Armory with separate Skins, Passes, Coins, and Settings tabs.
+- Responsive Armory with separate Skins, Crowns, Passes, Coins, and Settings tabs.
   Paid offers show Roblox prices when configured; unconfigured offers say Coming Soon.
 - Keyboard, touch, and controller bindings; subtle recoil with a reduced-motion option;
   reduced impact-particle option. Preferences currently last for the session.
-- Cyan map accents, consistent district signage, and proximity health/shield labels.
-- VIP cloud color/name tag and Double Coins passes, plus three repeatable coin packs.
+- Subdued cyan accents, non-emissive broad surfaces, low bloom, gentler lamps, consistent district signage, and proximity health/shield labels.
+- Three permanent wearable crown passes (Vanguard, Sovereign, Eclipse), VIP cloud color/name tag and Double Coins passes, plus three repeatable coin packs. Crowns have wear/remove controls, survive respawn, and save the equipped selection; entitlement comes from Roblox.
   All weapons are free; paid items do not change weapon damage or health.
 - Persistent, idempotent receipt fulfillment, session leases, deferred fulfillment
   during storage failures, save retries on departure, and shutdown save completion.
@@ -21,7 +23,7 @@ Open **FartNight.rbxlx** in Roblox Studio. The unchanged upload is retained in
 ## Editing and rebuilding
 
 The editable scripts are in `src/`. The place is generated from those scripts and
-the original map, without changing its geometry or original non-script properties.
+the original map, without changing its geometry. Explicit material/color overrides soften the original neon surfaces in both the generated place and at runtime.
 
 ```bash
 cd /workspace/roblox-creation-1
@@ -53,12 +55,15 @@ The current place is a development candidate, not a verified live release.
 | --- | --- | --- |
 | `Passes.VIP` | Game pass | Permanent Prism cloud color and gold overhead tag |
 | `Passes.DoubleCoins` | Game pass | Permanent 2× earned gameplay coins |
+| `Crowns[1].PassId` | Game pass | Permanent wearable Vanguard crown |
+| `Crowns[2].PassId` | Game pass | Permanent wearable Sovereign crown |
+| `Crowns[3].PassId` | Game pass | Permanent wearable Eclipse crown |
 | `Products.Coin250` | Developer product | 250 coins per purchase |
 | `Products.Coin1200` | Developer product | 1,200 coins per purchase |
 | `Products.Coin4000` | Developer product | 4,000 coins per purchase |
 
 Purchased coin packs are never multiplied by Double Coins. Currency is used for
-cosmetic unlocks. The shop reads prices from Roblox; the native Roblox confirmation
+cloud cosmetic unlocks. Wearable crowns are direct Robux game-pass purchases, not coin purchases or premium currency. A newly confirmed crown purchase equips it automatically; owned crowns can be worn or removed from the Crowns tab. Crown PassId values remain zero until configured, so they show Coming Soon. The shop reads prices from Roblox; the native Roblox confirmation
 prompt determines the final price. A prompt-finished event never awards product
 currency: the server waits for a durable receipt commit before acknowledging it.
 Old product IDs/awards must remain mapped if products are ever retired, so outstanding
@@ -84,7 +89,7 @@ engine, screen layout, live purchases, or actual DataStore behavior.
   leaving/rejoining. Simulate unavailable storage: gameplay continues, but spending
   stays disabled. A stale crashed-server lease may take up to three minutes to expire;
   rejoin afterward if the profile remains unavailable.
-- With real IDs, test pass ownership after purchase/rejoin, product coin delivery,
+- With real IDs, test crown purchase/wear/remove, respawn, hat compatibility on R6/R15 avatars, selected crown after rejoin, pass ownership, product coin delivery,
   cancellation, unavailable items, repeated receipt delivery, and interrupted saves.
   Use Roblox-supported test flows where available; real purchases may spend Robux.
   Keep price labels synchronized with the native confirmation prompt.

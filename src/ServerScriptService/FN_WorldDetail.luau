@@ -3,7 +3,8 @@ local TweenService=game:GetService("TweenService")
 local Lighting=game:GetService("Lighting")
 local arena=workspace:WaitForChild("FartNightArena")
 Lighting.ClockTime=18.2
-Lighting.Brightness=2
+Lighting.Brightness=1.6
+Lighting.ExposureCompensation=-.12
 Lighting.Ambient=Color3.fromRGB(86,105,148)
 Lighting.OutdoorAmbient=Color3.fromRGB(96,118,158)
 Lighting.FogColor=Color3.fromRGB(50,68,108)
@@ -14,19 +15,23 @@ if not atmo then
     atmo.Name="FN_Atmosphere";atmo.Density=.23;atmo.Offset=.04
     atmo.Color=Color3.fromRGB(162,182,226)
     atmo.Decay=Color3.fromRGB(58,75,119)
-    atmo.Glare=.13;atmo.Haze=1.6;atmo.Parent=Lighting
+    atmo.Glare=0;atmo.Haze=.8;atmo.Parent=Lighting
 end
 local bloom=Lighting:FindFirstChild("FN_Bloom")
 if not bloom then
     bloom=Instance.new("BloomEffect")
-    bloom.Name="FN_Bloom";bloom.Intensity=.3;bloom.Size=18;bloom.Threshold=1.5;bloom.Parent=Lighting
+    bloom.Name="FN_Bloom";bloom.Intensity=.045;bloom.Size=10;bloom.Threshold=2.5;bloom.Parent=Lighting
 end
 local color=Lighting:FindFirstChild("FN_Color")
 if not color then
     color=Instance.new("ColorCorrectionEffect")
-    color.Name="FN_Color";color.Contrast=.12;color.Saturation=.13
+    color.Name="FN_Color";color.Contrast=.04;color.Saturation=.03
     color.TintColor=Color3.fromRGB(224,233,255);color.Parent=Lighting
 end
+-- Apply settings even if an earlier effect already exists in the place.
+bloom.Intensity=.045;bloom.Size=10;bloom.Threshold=2.5
+atmo.Glare=0;atmo.Haze=.8
+color.Contrast=.04;color.Saturation=.03
 local signs={
     FN_Sign_HYPERMART={"HYPER MART","GEAR UP · EQUAL FIREPOWER"},
     FN_Sign_GASWORKS={"GASWORKS","PRESSURE DISTRICT"},
@@ -36,10 +41,10 @@ local signs={
 }
 for _,p in ipairs(arena:GetDescendants()) do
     if p:IsA("BasePart") then
-        -- Accent only existing trim: geometry, cover and collision remain unchanged.
-        if p.Name=="FN_SpawnGlow" or p.Name=="FN_PavementLight" or p.Name=="FN_CoverGlow" then
-            p.Color=Color3.fromRGB(67,207,245)
-        end
+        -- Broad surfaces and pickups reflect light instead of emitting glare.
+        local accent=p.Name=="FN_SpawnGlow" or p.Name=="FN_PavementLight" or p.Name=="FN_CoverGlow"
+        if p.Material==Enum.Material.Neon and not accent then p.Material=Enum.Material.SmoothPlastic end
+        if accent then p.Color=Color3.fromRGB(35,100,125) end
         local pickup=p.Name=="FN_Health" and "+ HEALTH" or p.Name=="FN_Shield" and "+ SHIELD"
         if pickup and not p:FindFirstChild("FN_PickupLabel") then
             local badge=Instance.new("BillboardGui")
@@ -76,7 +81,7 @@ for _,p in ipairs(arena:GetDescendants()) do
             smoke.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,.5),NumberSequenceKeypoint.new(1,1)})
             smoke.Color=ColorSequence.new(Color3.fromRGB(109,255,184));smoke.Parent=a
         elseif p.Name=="FN_NeonLight" then
-            local light=Instance.new("PointLight");light.Color=p.Color;light.Range=23;light.Brightness=.8;light.Parent=p
+            local light=Instance.new("PointLight");light.Color=p.Color;light.Range=12;light.Brightness=.18;light.Parent=p
         end
     end
 end

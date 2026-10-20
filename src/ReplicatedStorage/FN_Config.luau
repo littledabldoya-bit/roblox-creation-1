@@ -3,7 +3,7 @@
 local Config = {}
 
 Config.GameName = "FART-NIGHT"
-Config.Version = "3.0.0"
+Config.Version = "3.1.0"
 Config.ArenaRadius = 255
 Config.RespawnSeconds = 3
 Config.CoinPickupValue = 5
@@ -40,6 +40,13 @@ Config.Passes = {
     VIP = 0, -- exclusive VIP Prism cosmetic + golden VIP tag (no damage buffs)
     DoubleCoins = 0, -- 2x coins earned from gameplay; no combat stat advantage
 }
+-- Each wearable crown is a permanent game pass, not a repeatable product.
+Config.Crowns = {
+    {Id = "Vanguard", Name = "VANGUARD CROWN", PassId = 0, Color = Color3.fromRGB(109, 186, 210)},
+    {Id = "Sovereign", Name = "SOVEREIGN CROWN", PassId = 0, Color = Color3.fromRGB(213, 166, 66)},
+    {Id = "Eclipse", Name = "ECLIPSE CROWN", PassId = 0, Color = Color3.fromRGB(159, 124, 203)},
+}
+
 Config.Products = {
     Coin250 = 0, -- Creator Hub developer product; repeatable
     Coin1200 = 0,
