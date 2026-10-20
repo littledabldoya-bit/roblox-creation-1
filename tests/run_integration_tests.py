@@ -166,6 +166,9 @@ test('owned crowns equip, can be removed, and leave no duplicate models',functio
         sim:step(.4);remotes.Shop.OnServerEvent:Fire(player,'EquipCrown',crown.Id);sim:step(0)
         local wearable=player.Character:FindFirstChild('FN_WornCrown')
         assert(wearable and wearable.ClassName=='Accessory')
+        local badge=player.Character.Head:FindFirstChild('FN_CrownBadge')
+        assert(badge and badge.ClassName=='BillboardGui' and badge.Adornee==player.Character.Head and badge.AlwaysOnTop)
+        assert(#badge:GetChildren()==4 and badge.CrownBand and badge.CrownPoint)
         assert(player.Character.Head.Transparency==0 and player.CameraMinZoomDistance>=5)
         assert(wearable.Handle.Transparency==1 and not wearable.Handle.CanCollide)
         local visible=0
@@ -188,6 +191,7 @@ test('owned crowns equip, can be removed, and leave no duplicate models',functio
     end
     sim:step(.4);remotes.Shop.OnServerEvent:Fire(player,'EquipCrown','None');sim:step(0)
     assert(not player.Character:FindFirstChild('FN_WornCrown'))
+    assert(not player.Character.Head:FindFirstChild('FN_CrownBadge'))
 end)
 test('desktop, phone and tablet shop dimensions fit their viewports',function()
     local camera=sim.workspace.CurrentCamera

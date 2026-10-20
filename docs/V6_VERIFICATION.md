@@ -1,7 +1,7 @@
 # v6 offline verification — 20 October 2026
 
 Artifact: `fartnightv6.rbxlx`  
-SHA256: `4531c9a3b69c6072a31189efddb269e1647bf331cc33668c7103f8ab469feecd`
+SHA256: `12afd5c7ac8b788bd22d68f6df0b8560c0bb5d4f5fb1c2d84af4ac97d66cf5d2`
 
 **67 checks passed**, plus compilation of all seven embedded Luau scripts.
 Reproduce with `python3 tools/verify_release.py`. The saved cloud installer also
@@ -69,3 +69,13 @@ All 67 offline checks and seven compilations pass. This verifies the code path,
 not Roblox rendering; the user has not yet confirmed this follow-up in Studio.
 Music authorization remains blocked in the user's unpublished experience 0;
 code cannot grant Roblox audio permissions.
+
+## Visible crown badge fallback
+
+The user reported that the crown remained invisible after the camera fade fix. An
+always-on-top BillboardGui assembled from ordinary UI shapes now displays a raised
+three-point crown above an equipped character. It sits alongside the detailed 3D
+crown and is removed with it. The integration scenario checks all three crown tiers
+show the badge when equipped and clear it when removed. The full offline release
+suite passed again; seven embedded scripts compile. Studio visual confirmation is
+still needed.
