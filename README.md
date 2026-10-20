@@ -43,7 +43,7 @@ exported to `src/`; reconcile them before rebuilding. Keep the original upload i
 
 ## Enable real purchases
 
-The user has published Fart-Night; **all configured product/pass IDs still remain zero**.
+The user has published Fart-Night; **the two gun passes are configured; the other shop IDs remain zero**.
 The current place is a development candidate, not a verified live release.
 
 1. Open the updated place in Studio and publish it as a **private test experience**
@@ -188,12 +188,12 @@ silhouettes, scopes, cooling fins, receiver bolts, magazines and energy coils.
 They require no imported marketplace models. Verify their appearance and avatar
 fit in Studio; no engine-rendered visual review has been performed in this workspace.
 
-Create **two additional game passes** under Fart-Night in Creator Hub. Put their
-real IDs into `Config.Passes.VoidReaper` and `Config.Passes.IonStriker`, set the
-prices above, rebuild, and publish. These IDs are currently zero. Paid offers stay
-Coming Soon in published servers until configured. Ownership is queried on the
-server at join and verified again after purchase. Nonowners cannot receive,
-select, reload or deal damage with a premium weapon via spoofed client requests.
+The permanent gun passes are connected: Void Reaper `2037023377` and Ion Striker
+`2040425005`. Set their Creator Hub prices to R$499 and R$249 respectively, then
+publish the rebuilt v5 place over the existing Fart-Night place. The other eight
+shop offers still need their own IDs before they can be purchased. Ownership is
+queried on the server at join and verified again after purchase. Nonowners cannot
+receive, select, reload or deal damage with a premium weapon via spoofed requests.
 The original three weapons remain in StarterPack; paid weapons are never put there.
 
 `Config.StudioPremiumPreview = true` enables the two guns **only when the server
@@ -209,3 +209,12 @@ Run `tests/studio_weapon_checks.luau` from Studio's **server** command bar durin
 Play for barrel geometry checks. Check both premium weapons against a second
 100-HP player with and without shields, and repeat with spawn protection active.
 Test genuine ownership in a private published server after setting the pass IDs.
+
+## Creator Hub item images
+
+The complete ten-item artwork collection is in `assets/shop-icons/` as individual
+1024×1024 JPGs. `fartnight-all-shop-icons.zip` contains all ten images, including
+the existing gun icons. Match the filename to the Creator Hub pass/product using
+the table in `assets/shop-icons/README.md`. These local JPGs are not automatically
+uploaded to Roblox. Send the remaining pass/product IDs with their item names
+when created so they can be connected to the in-game shop.

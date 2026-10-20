@@ -41,8 +41,8 @@ Config.Cosmetics = {
 }
 
 Config.Passes = {
-    VoidReaper = 0, -- permanent premium one-shot railgun
-    IonStriker = 0, -- permanent premium two-shot rifle
+    VoidReaper = 2037023377, -- permanent premium one-shot railgun
+    IonStriker = 2040425005, -- permanent premium two-shot rifle
     VIP = 0, -- exclusive VIP Prism cosmetic + golden VIP tag (no damage buffs)
     DoubleCoins = 0, -- 2x coins earned from gameplay; no combat stat advantage
 }
