@@ -197,6 +197,9 @@ local function robuxOffer(key,title,kind,id,description,order,crown)
     local b=btn("Robux",frame,"COMING SOON",UDim2.new(1,-154,1,-40),UDim2.fromOffset(140,32),C.Gold)
     b.TextSize=11
     local entry={Key=key,Kind=kind,Id=id,CrownId=crown and crown.Id,Button=b,Available=false,Price="UNAVAILABLE"}
+    if id<=0 and Config.LaunchPrices[key] then
+        lbl("LaunchPrice",frame,"PLANNED R$ "..Config.LaunchPrices[key],UDim2.new(0,28,1,-40),UDim2.new(1,-192,0,32),11,C.Gold)
+    end
     table.insert(paidOffers,entry)
     if id>0 then
         task.spawn(function()
@@ -231,6 +234,50 @@ robuxOffer("Coin4000","4,000 COINS","Product",Config.Products.Coin4000,"Repeatab
 for i,crown in ipairs(Config.Crowns) do
     robuxOffer(crown.Id,crown.Name,"Pass",crown.PassId,"Permanent wearable crown · cosmetic only · no combat boost",i,crown)
 end
+-- A client-owned Sound survives character respawns and has independent mute/ducking.
+local SoundService=game:GetService("SoundService")
+local musicId=Config.Music and Config.Music.SoundId or 0
+local musicConfigured=type(musicId)=="number" and musicId>0
+local musicMuted=false
+local musicVolume=math.clamp(Config.Music and Config.Music.Volume or .22,0,.5)
+local oldMusic=SoundService:FindFirstChild("FN_ArenaMusic")
+if oldMusic then oldMusic:Destroy() end
+local music=Instance.new("Sound")
+music.Name="FN_ArenaMusic";music.Looped=true;music.Volume=0;music.Parent=SoundService
+local volumeTween
+local function updateMusic()
+    if volumeTween then volumeTween:Cancel() end
+    local target=musicMuted and 0 or (darken.Visible and musicVolume*.6 or musicVolume)
+    volumeTween=TweenService:Create(music,TweenInfo.new(.7),{Volume=target})
+    volumeTween:Play()
+end
+local musicFrame=offer("ARENA MUSIC","Original 152 BPM sci-fi instrumental · mute anytime",C.Cyan,"Settings",3)
+local musicButton=btn("MusicToggle",musicFrame,musicConfigured and "ON" or "COMING SOON",UDim2.new(1,-154,1,-40),UDim2.fromOffset(140,32),C.Card)
+musicButton.TextSize=11;musicButton.TextColor3=C.White
+musicButton.Active=musicConfigured;musicButton.Selectable=musicConfigured
+musicButton.Activated:Connect(function()
+    if not musicConfigured then return end
+    musicMuted=not musicMuted;musicButton.Text=musicMuted and "OFF" or "ON"
+    updateMusic()
+end)
+darken:GetPropertyChangedSignal("Visible"):Connect(updateMusic)
+if musicConfigured then
+    music.SoundId="rbxassetid://"..tostring(musicId)
+    music:Play();updateMusic()
+    task.delay(20,function()
+        if music.Parent and not music.IsLoaded then
+            warn("[FART-NIGHT] Music did not load; verify audio moderation and experience permissions.")
+            musicButton.Text="UNAVAILABLE"
+            musicButton.Active=false;musicButton.Selectable=false
+        end
+    end)
+    music.Loaded:Connect(function()
+        musicButton.Text=musicMuted and "OFF" or "ON"
+        musicButton.Active=true;musicButton.Selectable=true
+    end)
+end
+gui.Destroying:Connect(function() if music.Parent then music:Destroy() end end)
+
 local function setting(key,title,description,attribute,order)
     local frame=offer(title,description,C.Cyan,"Settings",order)
     local b=btn(key,frame,"OFF",UDim2.new(1,-154,1,-40),UDim2.fromOffset(140,32),C.Card)

@@ -3,7 +3,7 @@
 local Config = {}
 
 Config.GameName = "FART-NIGHT"
-Config.Version = "3.1.0"
+Config.Version = "3.2.0"
 Config.ArenaRadius = 255
 Config.RespawnSeconds = 3
 Config.CoinPickupValue = 5
@@ -52,5 +52,15 @@ Config.Products = {
     Coin1200 = 0,
     Coin4000 = 0,
 }
+-- Creator Hub launch prices (Robux). Metadata only: Roblox remains authoritative.
+Config.LaunchPrices = {
+    VIP = 149, DoubleCoins = 99,
+    Vanguard = 49, Sovereign = 99, Eclipse = 149,
+    Coin250 = 19, Coin1200 = 79, Coin4000 = 199,
+}
+-- Upload assets/music/NeonCircuit.mp3 under the experience owner, grant the
+-- experience permission to use it, and put the resulting audio asset ID here.
+Config.Music = {SoundId = 0, Volume = 0.22}
+
 Config.ProductAwards = {Coin250 = 250, Coin1200 = 1200, Coin4000 = 4000}
 return Config

@@ -1,6 +1,6 @@
 # FartNight: Neon City Arena
 
-Version 3.1 — softer lighting and wearable crowns.
+Version 3.2 — balanced neon accents, an original soundtrack, and finalized launch pricing.
 
 Competitive sci-fi free-for-all built from the supplied Roblox Studio place.
 Open **FartNight.rbxlx** in Roblox Studio. The unchanged upload is retained in
@@ -31,6 +31,7 @@ python3 tools/build_place.py
 python3 -m unittest discover -s tests -p 'test_*.py'
 /workspace/roblox-tools/luau/build/luau tests/economy.luau
 python3 tests/run_server_tests.py
+python3 tests/run_catalog_tests.py
 python3 /workspace/roblox-tools/check_place.py FartNight.rbxlx
 ```
 
@@ -51,16 +52,24 @@ The current place is a development candidate, not a verified live release.
    and publish the updated place to the same experience. Use unique IDs; do not use
    asset IDs or IDs belonging to another experience.
 
-| Config key | Roblox item | Delivery |
-| --- | --- | --- |
-| `Passes.VIP` | Game pass | Permanent Prism cloud color and gold overhead tag |
-| `Passes.DoubleCoins` | Game pass | Permanent 2× earned gameplay coins |
-| `Crowns[1].PassId` | Game pass | Permanent wearable Vanguard crown |
-| `Crowns[2].PassId` | Game pass | Permanent wearable Sovereign crown |
-| `Crowns[3].PassId` | Game pass | Permanent wearable Eclipse crown |
-| `Products.Coin250` | Developer product | 250 coins per purchase |
-| `Products.Coin1200` | Developer product | 1,200 coins per purchase |
-| `Products.Coin4000` | Developer product | 4,000 coins per purchase |
+| Config key | Roblox item | Delivery | Launch price (Robux) |
+| --- | --- | --- | ---: |
+| `Passes.VIP` | Game pass | Permanent Prism cloud color and gold overhead tag | 149 |
+| `Passes.DoubleCoins` | Game pass | Permanent 2× earned gameplay coins | 99 |
+| `Crowns[1].PassId` | Game pass | Permanent wearable Vanguard crown | 49 |
+| `Crowns[2].PassId` | Game pass | Permanent wearable Sovereign crown | 99 |
+| `Crowns[3].PassId` | Game pass | Permanent wearable Eclipse crown | 149 |
+| `Products.Coin250` | Developer product | 250 coins per purchase | 19 |
+| `Products.Coin1200` | Developer product | 1,200 coins per purchase | 79 |
+| `Products.Coin4000` | Developer product | 4,000 coins per purchase | 199 |
+
+These are the chosen base launch prices; enter them in Creator Hub when creating
+items. `Config.LaunchPrices` records the plan and supplies prelaunch labels only;
+it cannot change Roblox prices. Once real IDs are present, the shop fetches live
+prices and Roblox's native purchase prompt remains authoritative (including any
+regional pricing). Crown tiers provide 49/99/149 Robux entry points; bulk coin
+packs have progressively lower per-coin costs. Existing earned cosmetic costs
+are unchanged.
 
 Purchased coin packs are never multiplied by Double Coins. Currency is used for
 cloud cosmetic unlocks. Wearable crowns are direct Robux game-pass purchases, not coin purchases or premium currency. A newly confirmed crown purchase equips it automatically; owned crowns can be worn or removed from the Crowns tab. Crown PassId values remain zero until configured, so they show Coming Soon. The shop reads prices from Roblox; the native Roblox confirmation
@@ -95,8 +104,24 @@ engine, screen layout, live purchases, or actual DataStore behavior.
   Keep price labels synchronized with the native confirmation prompt.
 - Set the experience icon, thumbnails, description, supported devices, and accurate
   content-maturity information in Creator Hub, then complete a private playtest
-  before changing public availability. No icon, audio pack, thumbnails, or live
-  publication is included in this source update.
+  before changing public availability. Icon/thumbnail setup and live
+  publication remain Creator Hub tasks.
 
 The cloud task is already isolated. Use its existing checkout; create a Git worktree
 only when explicitly requested.
+
+## Original soundtrack
+
+`assets/music/NeonCircuit.mp3` is an original 152 BPM, 3:24 stereo instrumental,
+with changing lead sections, breakdowns, fills, and a fade at the loop boundary.
+It was synthesized for this project without third-party samples. Arena Music in
+Settings provides muting and the Armory ducks its volume; respawning does not
+restart it. Audio is mastered near -16 LUFS and -1.5 dBTP, with default in-game
+volume 0.22. See `assets/music/README.md` for regeneration and upload details.
+
+**One-time Roblox activation is required:** upload the MP3 as audio under the
+experience owner, wait for approval, grant the experience access, and put its
+numeric asset ID in `Config.Music.SoundId`. Rebuild and publish the place afterward.
+The ID is currently zero, so music shows Coming Soon until that is done. Audio
+playback, music/combat balance and the revised neon appearance still require a
+Studio/private-server playtest; offline checks cannot judge the final game mix.
